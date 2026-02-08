@@ -370,7 +370,7 @@ public:
                     const uint8_t *srcRow = static_cast<const uint8_t *>(view_.data) + (view_.y + y) * view_.stride +
                                             view_.x * view_.bytesPerPixel();
                     uint8_t *dstRow = static_cast<uint8_t *>(converted.view_.data) + y * converted.view_.stride;
-                    resolved(dstRow, srcRow, view_.width);
+                    resolved(dstRow, srcRow, static_cast<size_t>(view_.width));
                 }
             }
         }
@@ -582,7 +582,7 @@ inline bool ImageBuffer::blendFrom(const ImageBuffer &src)
     auto blendFunc = srcFmt->blendUnderStraight;
     if (blendFunc) {
         // 直接ブレンド（RGBA8_Straight等、blendUnderStraight実装済みフォーマット）
-        blendFunc(dstPtr, srcPtr, remaining, srcAux);
+        blendFunc(dstPtr, srcPtr, static_cast<size_t>(remaining), srcAux);
     } else {
         // フォールバック: チャンク単位でRGBA8_Straightに変換してからブレンド
         auto converter = resolveConverter(srcFmt, PixelFormatIDs::RGBA8_Straight, srcAux);
@@ -600,9 +600,9 @@ inline bool ImageBuffer::blendFrom(const ImageBuffer &src)
 
         do {
             int_fast16_t chunk = std::min(remaining, CHUNK_SIZE);
-            converter(tempBuf, srcChunkPtr, chunk);
+            converter(tempBuf, srcChunkPtr, static_cast<size_t>(chunk));
             void *dstChunkPtr = dstRow + static_cast<size_t>(cursor - dstStartX) * dstPixelBytes;
-            straightBlend(dstChunkPtr, tempBuf, chunk, nullptr);
+            straightBlend(dstChunkPtr, tempBuf, static_cast<size_t>(chunk), nullptr);
             srcChunkPtr += srcBytesPerChunk;
             cursor += chunk;
             remaining -= chunk;

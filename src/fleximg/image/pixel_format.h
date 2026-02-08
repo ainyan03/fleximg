@@ -481,7 +481,7 @@ inline void convertFormat(const void *src, PixelFormatID srcFormat, void *dst, P
     (void)dstAux;  // 現在の全呼び出し箇所で未使用
     auto converter = resolveConverter(srcFormat, dstFormat, srcAux);
     if (converter) {
-        converter(dst, src, pixelCount);
+        converter(dst, src, static_cast<size_t>(pixelCount));
     }
 }
 

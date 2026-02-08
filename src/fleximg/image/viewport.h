@@ -473,7 +473,7 @@ void copyRowDDABilinear(void *dst, const ViewPort &src, int_fast16_t count, int_
 
         // フォーマット変換（必要な場合、in-place）
         if (converter) {
-            converter(quadBuffer, quadPtr, chunk * 4);
+            converter(quadBuffer, quadPtr, static_cast<size_t>(chunk) * 4);
         }
         uint32_t *quadRGBA = quadBuffer;
 

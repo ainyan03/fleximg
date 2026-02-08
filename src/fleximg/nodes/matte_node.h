@@ -474,7 +474,7 @@ RenderResponse &MatteNode::onPullProcess(const RenderRequest &request)
                                                 (bgViewPort.y + srcY) * bgViewPort.stride +
                                                 (bgViewPort.x + srcStartX) * srcBytesPerPixel;
                         uint8_t *dstRow = static_cast<uint8_t *>(outView.data) + y * outView.stride + copyStartX * 4;
-                        converter(dstRow, srcRow, copyWidth);
+                        converter(dstRow, srcRow, static_cast<size_t>(copyWidth));
                     }
                 }
             }

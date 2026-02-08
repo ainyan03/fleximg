@@ -31,22 +31,22 @@
 //
 
 #ifdef ARDUINO
-#define FLEXIMG_DEBUG_LOG(fmt, ...)      \
-    do {                                 \
-        printf(fmt "\n", ##__VA_ARGS__); \
-        fflush(stdout);                  \
-        vTaskDelay(1);                   \
+#define FLEXIMG_DEBUG_LOG(fmt, ...)    \
+    do {                               \
+        printf(fmt "\n", __VA_ARGS__); \
+        fflush(stdout);                \
+        vTaskDelay(1);                 \
     } while (0)
 #else
-#define FLEXIMG_DEBUG_LOG(fmt, ...)      \
-    do {                                 \
-        printf(fmt "\n", ##__VA_ARGS__); \
-        fflush(stdout);                  \
+#define FLEXIMG_DEBUG_LOG(fmt, ...)    \
+    do {                               \
+        printf(fmt "\n", __VA_ARGS__); \
+        fflush(stdout);                \
     } while (0)
 #endif
 
 #ifdef FLEXIMG_DEBUG
-#define FLEXIMG_DEBUG_WARN(fmt, ...) FLEXIMG_DEBUG_LOG(fmt, ##__VA_ARGS__)
+#define FLEXIMG_DEBUG_WARN(fmt, ...) FLEXIMG_DEBUG_LOG(fmt, __VA_ARGS__)
 #else
 #define FLEXIMG_DEBUG_WARN(fmt, ...) ((void)0)
 #endif

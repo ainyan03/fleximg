@@ -161,7 +161,7 @@ handle_dstA_255: {
             d += 16;
             dstA = d[3];
         } while (--plimit);
-        auto pindex = (d - d_start);
+        auto pindex = static_cast<size_t>(d - d_start);
         if (d != d_start) {
             pixelCount -= pindex >> 2;
             if (pixelCount <= 0) return;
@@ -203,7 +203,7 @@ handle_dstA_0: {
             dstA = d[3];
             s += 16;
         } while (--plimit);
-        auto pindex = (s - s_start);
+        auto pindex = static_cast<size_t>(s - s_start);
         if (pindex) {
             pixelCount -= pindex >> 2;
             if (pixelCount <= 0) return;
@@ -239,7 +239,7 @@ handle_srcA_0: {
             s += 16;
             srcA = s[3];
         } while (--plimit);
-        auto pindex = (s - s_start);
+        auto pindex = static_cast<size_t>(s - s_start);
         if (pindex) {
             pixelCount -= pindex >> 2;
             if (pixelCount <= 0) return;
