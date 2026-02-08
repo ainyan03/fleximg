@@ -7,6 +7,7 @@
 #define FLEXIMG_DATA_RANGE_CACHE_H
 
 #include "../image/data_range.h"
+#include "../image/render_types.h"
 #include "types.h"
 #include <cstdint>
 
