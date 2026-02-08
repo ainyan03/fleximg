@@ -9,22 +9,22 @@
 #include <string>
 #include <vector>
 
-#include "../src/fleximg/core/format_metrics.h"
-#include "../src/fleximg/core/memory/pool_allocator.h"
-#include "../src/fleximg/nodes/affine_node.h"
-#include "../src/fleximg/nodes/alpha_node.h"
-#include "../src/fleximg/nodes/brightness_node.h"
-#include "../src/fleximg/nodes/composite_node.h"
-#include "../src/fleximg/nodes/distributor_node.h"
-#include "../src/fleximg/nodes/filter_node_base.h"
-#include "../src/fleximg/nodes/grayscale_node.h"
-#include "../src/fleximg/nodes/horizontal_blur_node.h"
-#include "../src/fleximg/nodes/matte_node.h"
-#include "../src/fleximg/nodes/ninepatch_source_node.h"
-#include "../src/fleximg/nodes/renderer_node.h"
-#include "../src/fleximg/nodes/sink_node.h"
-#include "../src/fleximg/nodes/source_node.h"
-#include "../src/fleximg/nodes/vertical_blur_node.h"
+#include "fleximg/core/format_metrics.h"
+#include "fleximg/core/memory/pool_allocator.h"
+#include "fleximg/nodes/affine_node.h"
+#include "fleximg/nodes/alpha_node.h"
+#include "fleximg/nodes/brightness_node.h"
+#include "fleximg/nodes/composite_node.h"
+#include "fleximg/nodes/distributor_node.h"
+#include "fleximg/nodes/filter_node_base.h"
+#include "fleximg/nodes/grayscale_node.h"
+#include "fleximg/nodes/horizontal_blur_node.h"
+#include "fleximg/nodes/matte_node.h"
+#include "fleximg/nodes/ninepatch_source_node.h"
+#include "fleximg/nodes/renderer_node.h"
+#include "fleximg/nodes/sink_node.h"
+#include "fleximg/nodes/source_node.h"
+#include "fleximg/nodes/vertical_blur_node.h"
 
 using namespace emscripten;
 using namespace FLEXIMG_NAMESPACE;
