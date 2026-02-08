@@ -82,9 +82,11 @@ pio run -e basic_m5stack_core2 -t upload  # M5Stack書き込み
 ### テスト
 
 ```bash
-cd test
-make all_tests && ./all_tests       # 全テスト実行
+pio test -e test_native             # PlatformIOでテスト実行（推奨）
+cd test && make test                # Makefileでテスト実行（従来方式）
 ```
+
+GitHub Actions CI（`.github/workflows/test.yml`）で main への push / PR 時に自動テストが実行される。
 
 ※ローカル環境固有の設定（emsdkパスなど）は `CLAUDE.local.md` に記載
 
