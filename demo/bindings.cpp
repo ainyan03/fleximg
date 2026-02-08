@@ -829,7 +829,7 @@ public:
         lastPerfMetrics_.nodes[NodeType::Brightness].time_us +
         lastPerfMetrics_.nodes[NodeType::Grayscale].time_us +
         lastPerfMetrics_.nodes[NodeType::Alpha].time_us;
-    int filterCountSum = lastPerfMetrics_.nodes[NodeType::Brightness].count +
+    uint32_t filterCountSum = lastPerfMetrics_.nodes[NodeType::Brightness].count +
                          lastPerfMetrics_.nodes[NodeType::Grayscale].count +
                          lastPerfMetrics_.nodes[NodeType::Alpha].count;
     result.set("filterTime", filterTimeSum);
