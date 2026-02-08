@@ -9,11 +9,7 @@ src/fleximg/*.o
 *.o
 
 # Test binaries
-test/integration_test
-test/viewport_test
-test/calc_valid_range_test
-test/trapezoid_fit_test
-test/box_blur_test
+test/*_test
 
 # CLI binary
 cli/imgproc
