@@ -8,7 +8,7 @@ Arduino等の組込み環境への移植を容易にするため、コアライ�
 
 **GitHub Pagesで公開中！ビルド不要で即座に試せます：**
 
-https://ainyan03.github.io/claude_code_test/
+https://ainyan03.github.io/fleximg/
 
 PC・スマートフォン両方から直接アクセス可能です。C++で実装されたWebAssembly版が動作します。
 

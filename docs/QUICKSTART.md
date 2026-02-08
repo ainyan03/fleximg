@@ -4,7 +4,7 @@
 
 ### 最も簡単な方法: GitHub Pagesでアクセス
 
-**https://ainyan03.github.io/claude_code_test/**
+**https://ainyan03.github.io/fleximg/**
 
 ビルド不要でブラウザから直接利用できます。WebAssembly版が動作します。
 

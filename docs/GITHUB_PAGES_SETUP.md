@@ -43,7 +43,7 @@ git push
 https://[ユーザー名].github.io/[リポジトリ名]/
 ```
 
-例: `https://ainyan03.github.io/claude_code_test/`
+例: `https://ainyan03.github.io/fleximg/`
 
 ## 自動ビルド＆デプロイの仕組み
 
