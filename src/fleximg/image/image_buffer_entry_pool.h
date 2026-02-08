@@ -102,16 +102,10 @@ public:
   void release(Entry *entry) {
     size_t idx = static_cast<size_t>(entry - entries_);
     if (idx < POOL_SIZE) {
-#ifdef FLEXIMG_DEBUG
       if (!entry->inUse) {
-        printf("DOUBLE RELEASE: entry=%p idx=%d\n", static_cast<void *>(entry),
-               static_cast<int>(idx));
-        fflush(stdout);
-#ifdef ARDUINO
-        vTaskDelay(1);
-#endif
+        FLEXIMG_DEBUG_WARN("DOUBLE RELEASE: entry=%p idx=%d",
+                           static_cast<void *>(entry), static_cast<int>(idx));
       }
-#endif
       if (entry->inUse) {
         entry->buffer.reset(); // バッファ解放（重要: 再取得前にクリア）
         entry->inUse = false;
