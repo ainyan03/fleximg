@@ -289,8 +289,21 @@ struct PerfMetrics {
 
 } // namespace core
 
-// [DEPRECATED] 後方互換性のため親名前空間に公開。将来廃止予定。
-// 新規コードでは core:: プレフィックスを使用してください。
+// ========================================================================
+// 後方互換性のためのグローバルスコープ using（v3.0 で削除予定）
+// ========================================================================
+//
+// これらの using ステートメントは v2.x で後方互換性を提供していますが、
+// v3.0 では削除される予定です。
+//
+// 新規コードでは core:: プレフィックスを明示的に使用してください。
+// 既存コードの移行には MIGRATION_GUIDE.md を参照してください。
+//
+// 削除予定の using:
+// - NodeType (namespace alias)
+// - NodeMetrics, PerfMetrics
+//
+
 namespace NodeType = core::NodeType;
 using core::NodeMetrics;
 using core::PerfMetrics;
