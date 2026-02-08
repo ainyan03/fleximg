@@ -113,13 +113,8 @@ public:
     }
     // プール枯渇
     error_ = Error::PoolExhausted;
-#ifdef FLEXIMG_DEBUG
-    printf("ERROR: RenderResponse pool exhausted! MAX=%d\n", MAX_RESPONSES);
-    fflush(stdout);
-#ifdef ARDUINO
-    vTaskDelay(1);
-#endif
-#endif
+    FLEXIMG_DEBUG_WARN("ERROR: RenderResponse pool exhausted! MAX=%d",
+                       MAX_RESPONSES);
     // フォールバック: 最後のエントリを強制再利用（エラー状態）
     RenderResponse &fallback = responsePool_[MAX_RESPONSES - 1];
     fallback.setPool(entryPool_);
@@ -135,16 +130,11 @@ public:
     // 範囲チェック（プール内のアドレスか確認）
     size_t idx = static_cast<size_t>(&resp - responsePool_);
     if (idx < MAX_RESPONSES) {
-#ifdef FLEXIMG_DEBUG
       if (!resp.inUse) {
-        printf("WARN: releaseResponse called on non-inUse response idx=%d\n",
-               static_cast<int>(idx));
-        fflush(stdout);
-#ifdef ARDUINO
-        vTaskDelay(1);
-#endif
+        FLEXIMG_DEBUG_WARN(
+            "WARN: releaseResponse called on non-inUse response idx=%d",
+            static_cast<int>(idx));
       }
-#endif
       resp.clear();       // エントリをプールに返却
       resp.inUse = false; // スロットを再利用可能に
     }
@@ -155,19 +145,18 @@ public:
   void resetScanlineResources() {
 #ifdef FLEXIMG_DEBUG
     // 未返却チェック
-    uint_fast8_t inUseCount = 0;
-    for (uint_fast8_t i = 0; i < MAX_RESPONSES; ++i) {
-      if (responsePool_[i].inUse)
-        ++inUseCount;
-    }
-    if (inUseCount > 1) {
-      // 1つは下流に渡されるため、1以下なら正常
-      printf("WARN: resetScanlineResources with %d responses still in use\n",
-             inUseCount);
-      fflush(stdout);
-#ifdef ARDUINO
-      vTaskDelay(1);
-#endif
+    // 1つは下流に渡されるため、1以下なら正常
+    {
+      uint_fast8_t inUseCount = 0;
+      for (uint_fast8_t i = 0; i < MAX_RESPONSES; ++i) {
+        if (responsePool_[i].inUse)
+          ++inUseCount;
+      }
+      if (inUseCount > 1) {
+        FLEXIMG_DEBUG_WARN(
+            "WARN: resetScanlineResources with %d responses still in use",
+            inUseCount);
+      }
     }
 #endif
     for (uint_fast8_t i = 0; i < MAX_RESPONSES; ++i) {
