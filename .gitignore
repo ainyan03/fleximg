@@ -1,0 +1,44 @@
+# WebAssembly demo build outputs
+demo/web/fleximg.js
+demo/web/fleximg.wasm
+demo/web/version.js
+
+# Native build outputs
+build/
+src/fleximg/*.o
+*.o
+
+# Test binaries
+test/integration_test
+test/viewport_test
+test/calc_valid_range_test
+test/trapezoid_fit_test
+test/box_blur_test
+
+# CLI binary
+cli/imgproc
+
+# Emscripten cache
+.emscripten_cache/
+
+# PlatformIO build outputs
+.pio/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Claude Code
+CLAUDE.local.md
+.work/
+
+# Temporary files
+*.tmp
+*.log

@@ -1,0 +1,1677 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    height: 100vh;
+    padding: 10px;
+    overflow: hidden;
+}
+
+.container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    /* モバイルブラウザのアドレスバー等を考慮した高さ設定 */
+    height: calc(100vh - 20px);                 /* フォールバック（古いブラウザ用） */
+    height: calc(100dvh - 20px);                /* Dynamic Viewport Height（推奨） */
+    height: -webkit-fill-available;             /* iOS Safari対応 */
+    max-height: calc(100dvh - 20px);            /* はみ出し防止 */
+    display: flex;
+    flex-direction: column;
+}
+
+header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 6px 20px;
+    text-align: center;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+}
+
+header h1 {
+    font-size: 1.2em;
+    margin: 0;
+    white-space: nowrap;
+}
+
+header p {
+    font-size: 0.8em;
+    opacity: 0.9;
+    margin: 0;
+    white-space: nowrap;
+}
+
+.version-info {
+    font-size: 0.7em;
+    opacity: 0.7;
+    font-family: 'Courier New', monospace;
+    white-space: nowrap;
+}
+
+.main-content {
+    display: flex;
+    flex-direction: column;
+    padding: 0 20px 10px 20px;
+    flex: 1;
+    min-height: 150px;
+    overflow: hidden;
+}
+
+/* スプリッターバー */
+.splitter {
+    flex-shrink: 0;
+    height: 12px;
+    margin: 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: row-resize;
+    user-select: none;
+}
+
+.splitter-handle {
+    width: 60px;
+    height: 4px;
+    background: #ccc;
+    border-radius: 2px;
+    transition: background 0.2s;
+}
+
+.splitter:hover .splitter-handle,
+.splitter.dragging .splitter-handle {
+    background: #667eea;
+}
+
+.splitter.dragging {
+    background: rgba(102, 126, 234, 0.1);
+}
+
+/* プレビューセクション */
+.preview-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+}
+
+.canvas-container {
+    background: #f5f5f5;
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    display: grid;
+    box-sizing: border-box;
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    scrollbar-width: auto;
+}
+
+/* キャンバスラッパー：最小サイズ100%で中央配置 */
+.canvas-container::before {
+    content: '';
+    display: none;
+}
+
+.canvas-container > canvas {
+    margin: auto;
+}
+
+/* WebKit系ブラウザ（Chrome, Safari）でスクロールバーを常時表示 */
+.canvas-container::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+.canvas-container::-webkit-scrollbar-track {
+    background: #e0e0e0;
+    border-radius: 6px;
+}
+
+.canvas-container::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 6px;
+}
+
+.canvas-container::-webkit-scrollbar-thumb:hover {
+    background: #666;
+}
+
+#preview-canvas {
+    /* 圧縮せずに本来のサイズで表示（コンテナがスクロール） */
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.canvas-controls {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.canvas-controls .primary-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+}
+
+.preview-scale-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.preview-scale-control .scale-label {
+    font-size: 12px;
+    color: #666;
+}
+
+.preview-scale-control .scale-slider {
+    width: 100px;
+    height: 4px;
+    cursor: pointer;
+}
+
+.preview-scale-control .scale-value {
+    font-size: 12px;
+    color: #333;
+    min-width: 28px;
+}
+
+/* コンテンツライブラリ（画像・出力共通） */
+.content-item {
+    background: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.2s;
+}
+
+.content-item:hover {
+    border-color: #667eea;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+}
+
+.content-item.focused {
+    border-color: #4CAF50;
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.3);
+}
+
+.content-thumbnail {
+    width: 60px;
+    height: 45px;
+    border-radius: 4px;
+    overflow: hidden;
+    background: #f0f0f0;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.content-thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.content-thumbnail .placeholder-icon {
+    font-size: 24px;
+    opacity: 0.5;
+}
+
+.content-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.content-name {
+    font-weight: 500;
+    color: #333;
+    font-size: 0.85em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.content-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.content-size {
+    font-size: 0.75em;
+    color: #888;
+}
+
+.content-actions {
+    display: flex;
+    gap: 4px;
+    margin-left: auto;
+}
+
+.add-node-btn {
+    padding: 4px 8px;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8em;
+    transition: background 0.2s;
+    white-space: nowrap;
+}
+
+/* Source側（送る）: オレンジ */
+.add-node-btn.source {
+    background: #ff9800;
+}
+
+.add-node-btn.source:hover {
+    background: #f57c00;
+}
+
+/* Sink側（受ける）: 青 */
+.add-node-btn.sink {
+    background: #667eea;
+}
+
+.add-node-btn.sink:hover {
+    background: #5568d3;
+}
+
+.add-node-btn.ninepatch {
+    background: #d97706;  /* アンバー系（+Srcと同系統） */
+}
+
+.add-node-btn.ninepatch:hover {
+    background: #b45309;
+}
+
+.add-node-btn:disabled {
+    background: #ccc;
+    cursor: default;
+}
+
+.delete-btn {
+    padding: 4px 8px;
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85em;
+    transition: background 0.2s;
+}
+
+.delete-btn:hover {
+    background: #dc2626;
+}
+
+/* ボタン */
+button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 600;
+}
+
+.primary-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.primary-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
+}
+
+.primary-btn:active {
+    transform: translateY(0);
+}
+
+.secondary-btn {
+    background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(108, 117, 125, 0.3);
+    padding: 6px 12px;
+    font-size: 12px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.secondary-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
+}
+
+.secondary-btn:active {
+    transform: translateY(0);
+}
+
+.secondary-btn.danger {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+}
+
+.secondary-btn.danger:hover {
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+}
+
+.secondary-btn.small {
+    padding: 4px 8px;
+    font-size: 11px;
+}
+
+/* ローディング */
+.loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    z-index: 1000;
+}
+
+.loading.hidden {
+    display: none;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.loading p {
+    margin-top: 20px;
+    font-size: 16px;
+}
+
+/* コンテキストメニュー */
+.context-menu {
+    position: fixed;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    z-index: 10000;
+    min-width: 150px;
+}
+
+.context-menu-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+.context-menu-item:hover {
+    background: #f0f0f0;
+}
+
+.context-menu-item:active {
+    background: #e0e0e0;
+}
+
+/* ノード詳細パネル */
+.node-detail-panel {
+    position: fixed;
+    background: white;
+    border: 2px solid #667eea;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    z-index: 9999;
+    min-width: 200px;
+    max-width: 280px;
+    max-height: 400px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.node-detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    cursor: move;
+}
+
+.node-detail-title {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.node-detail-close {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 0;
+    transition: background 0.2s;
+}
+
+.node-detail-close:hover {
+    background: rgba(255, 255, 255, 0.4);
+}
+
+.node-detail-content {
+    padding: 12px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.node-detail-section {
+    margin-bottom: 12px;
+}
+
+.node-detail-section:last-child {
+    margin-bottom: 0;
+}
+
+.node-detail-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #667eea;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+}
+
+.node-detail-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 0;
+}
+
+.node-detail-row label {
+    font-size: 12px;
+    min-width: 50px;
+    color: #333;
+}
+
+.node-detail-row input[type="range"] {
+    flex: 1;
+    min-width: 80px;
+}
+
+.node-detail-row .value-display {
+    font-size: 11px;
+    min-width: 40px;
+    text-align: right;
+    color: #666;
+}
+
+/* レスポンシブデザイン（スマートフォン対応） */
+@media (max-width: 768px) {
+    body {
+        padding: 0;
+    }
+
+    .container {
+        border-radius: 0;
+    }
+
+    header h1 {
+        font-size: 1.3em;
+    }
+
+    header p {
+        font-size: 0.8em;
+    }
+
+    .main-content {
+        grid-template-columns: 1fr;
+        padding: 15px;
+    }
+
+    .preview-section {
+        order: 1;
+    }
+
+    .canvas-container {
+        min-height: 0;  /* PC時と統一（flex: 1で自動調整） */
+    }
+
+    button, .primary-btn {
+        padding: 12px 16px;
+        font-size: 16px;
+        touch-action: manipulation;
+    }
+}
+
+/* グローバルノードグラフセクション */
+.node-graph-section {
+    margin: 10px 20px 0 20px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    flex: 1;
+    min-height: 150px;
+    display: flex;
+    flex-direction: column;
+}
+
+.node-graph-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.node-graph-header h2 {
+    font-size: 1.2em;
+    margin: 0;
+}
+
+.node-graph-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* カスタムノード追加ドロップダウン */
+.node-add-dropdown {
+    position: relative;
+}
+
+.node-add-btn {
+    padding: 6px 14px;
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 6px;
+    color: white;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.node-add-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.6);
+}
+
+.node-add-btn:active {
+    background: rgba(255, 255, 255, 0.4);
+}
+
+.node-add-menu {
+    display: none;
+    position: fixed;
+    min-width: 180px;
+    max-height: 400px;
+    overflow-y: auto;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    z-index: 2000;
+}
+
+.node-add-menu.visible {
+    display: block;
+}
+
+.node-add-category {
+    border-bottom: 1px solid #eee;
+}
+
+.node-add-category:last-child {
+    border-bottom: none;
+}
+
+.node-add-category-header {
+    padding: 8px 12px 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: #f8f8f8;
+}
+
+.node-add-item {
+    padding: 10px 12px;
+    font-size: 14px;
+    color: #333;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.node-add-item:hover {
+    background: #f0f4ff;
+}
+
+.node-add-item:active {
+    background: #e0e8ff;
+}
+
+.node-add-item .item-icon {
+    margin-right: 8px;
+}
+
+.node-graph-canvas-container {
+    background: #fafafa;
+    overflow: scroll;
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    scrollbar-width: auto;
+    overflow-anchor: none;  /* Chrome Scroll Anchoring を無効化 */
+}
+
+/* WebKit系ブラウザ（Chrome, Safari）でスクロールバーを常時表示 */
+.node-graph-canvas-container::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+.node-graph-canvas-container::-webkit-scrollbar-track {
+    background: #e0e0e0;
+    border-radius: 6px;
+}
+
+.node-graph-canvas-container::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 6px;
+}
+
+.node-graph-canvas-container::-webkit-scrollbar-thumb:hover {
+    background: #666;
+}
+
+#node-graph-canvas {
+    display: block;
+    background:
+        linear-gradient(90deg, #f0f0f0 1px, transparent 1px),
+        linear-gradient(#f0f0f0 1px, transparent 1px);
+    background-size: 20px 20px;
+    /* 固定サイズ: スクロール可能な領域を確保 */
+    width: 1600px;
+    height: 1200px;
+    min-width: 1600px;
+    min-height: 1200px;
+}
+
+/* ノード要素（SVG foreignObject内のHTML） */
+.node-box {
+    background: white;
+    border: 2px solid #667eea;
+    border-radius: 8px;
+    padding: 8px 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    cursor: move;
+    user-select: none;
+    min-width: 120px;
+}
+
+/* ノードタイプ別の色分け */
+.node-box.node-type-image {
+    border-color: #48bb78;
+}
+
+.node-box.node-type-filter {
+    border-color: #667eea;
+}
+
+.node-box.node-type-affine {
+    border-color: #38b2ac; /* ティール: アフィン変換 */
+}
+
+.node-box.node-type-composite {
+    border-color: #9f7aea;
+}
+
+.node-box.node-type-renderer {
+    border-color: #f56565; /* 赤系: パイプライン発火点 */
+}
+
+.node-box.node-type-sink {
+    border-color: #ed8936; /* オレンジ: 出力 */
+}
+
+.node-box.dragging {
+    opacity: 0.7;
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+}
+
+.node-box-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+
+.node-box-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #667eea;
+}
+
+.node-box-id {
+    font-size: 9px;
+    color: #999;
+}
+
+.node-box-content {
+    font-size: 10px;
+    color: #666;
+}
+
+/* ノード接続線 */
+.node-connection {
+    stroke: #667eea;
+    stroke-width: 2;
+    fill: none;
+    opacity: 0.5;
+    cursor: pointer;
+}
+
+.node-connection:hover {
+    opacity: 1;
+    stroke-width: 3;
+}
+
+.node-connection-drag {
+    pointer-events: none;
+}
+
+/* ノードポート */
+.node-port {
+    cursor: pointer;
+    /* 位置(cx,cy)はトランジションしない。hover時のr, filterのみアニメーション */
+    transition: r 0.2s, filter 0.2s;
+}
+
+.node-port:hover {
+    r: 8;
+    filter: drop-shadow(0 0 4px rgba(102, 126, 234, 0.6));
+}
+
+.node-port-input:hover {
+    fill: #667eea !important;
+}
+
+.node-port-output:hover {
+    fill: #38a169 !important;
+}
+
+/* ノードグラフヘルプテキスト */
+.node-graph-help {
+    padding: 10px 15px;
+    background: #f0f4ff;
+    border-top: 1px solid #e2e8f0;
+    font-size: 12px;
+    color: #4a5568;
+    text-align: center;
+}
+
+/* 合成ノードのコントロール */
+.node-box-controls {
+    margin-top: 4px;
+    padding-top: 4px;
+    border-top: 1px solid #e2e8f0;
+}
+
+/* 原点選択グリッド */
+.origin-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+    background: #ccc;
+    padding: 2px;
+    border-radius: 4px;
+    width: 100%;
+    max-width: 100px;
+}
+
+.origin-point {
+    aspect-ratio: 1;
+    padding: 0;
+    border: none;
+    background: #f0f0f0;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+    min-height: 28px;
+}
+
+.origin-point::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 6px;
+    height: 6px;
+    background: #aaa;
+    border-radius: 50%;
+    transition: all 0.15s;
+}
+
+.origin-point:hover {
+    background: #e0e0e0;
+}
+
+.origin-point:hover::after {
+    background: #667eea;
+    width: 10px;
+    height: 10px;
+}
+
+.origin-point.selected {
+    background: #667eea;
+}
+
+.origin-point.selected::after {
+    background: white;
+    width: 10px;
+    height: 10px;
+}
+
+/* ノード内の原点セレクタ（コンパクト版） */
+.node-origin-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: #ccc;
+    padding: 1px;
+    border-radius: 3px;
+    width: 42px;
+    height: 42px;
+}
+
+.node-origin-point {
+    padding: 0;
+    border: none;
+    background: #e8e8e8;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+}
+
+.node-origin-point::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 4px;
+    height: 4px;
+    background: #999;
+    border-radius: 50%;
+    transition: all 0.15s;
+}
+
+.node-origin-point:hover {
+    background: #d0d0d0;
+}
+
+.node-origin-point:hover::after {
+    background: #48bb78;
+    width: 6px;
+    height: 6px;
+}
+
+.node-origin-point.selected {
+    background: #48bb78;
+}
+
+.node-origin-point.selected::after {
+    background: white;
+    width: 6px;
+    height: 6px;
+}
+
+/* ===========================================
+   左袖サイドバー
+   =========================================== */
+
+/* サイドバートグルボタン */
+.sidebar-toggle {
+    position: fixed;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1001;
+    width: 40px;
+    height: 60px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 0 8px 8px 0;
+    color: white;
+    cursor: pointer;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s;
+    padding: 0;
+}
+
+.sidebar-toggle:hover {
+    width: 48px;
+    box-shadow: 4px 0 12px rgba(0, 0, 0, 0.3);
+}
+
+.sidebar-toggle-icon {
+    font-size: 20px;
+    display: block;
+    transition: transform 0.3s;
+}
+
+.sidebar-toggle.open .sidebar-toggle-icon {
+    transform: rotate(90deg);
+}
+
+/* サイドバー本体 */
+.sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 280px;
+    /* モバイルブラウザのUI（アドレスバー等）を考慮した高さ設定 */
+    height: 100vh;                      /* フォールバック */
+    height: 100dvh;                     /* Dynamic Viewport Height（推奨） */
+    height: -webkit-fill-available;     /* iOS Safari対応 */
+    background: white;
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar.open {
+    transform: translateX(0);
+}
+
+.sidebar-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+}
+
+/* ===========================================
+   アコーディオンUI
+   =========================================== */
+
+.sidebar-accordion-item {
+    display: flex;
+    flex-direction: column;
+    border-bottom: 1px solid #e0e0e0;
+    min-height: 0;
+    flex-shrink: 0;
+    transition: flex 0.3s ease;
+}
+
+.sidebar-accordion-item:last-child {
+    border-bottom: none;
+}
+
+/* 開いている状態 */
+.sidebar-accordion-item.active {
+    flex: 1;
+    overflow: hidden;
+}
+
+/* アコーディオンヘッダー */
+.sidebar-accordion-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 12px 15px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: none;
+    border-radius: 0;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: 600;
+    color: #333;
+    text-align: left;
+    flex-shrink: 0;
+    transition: background 0.3s ease, color 0.3s ease;
+}
+
+.sidebar-accordion-header:hover {
+    background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+}
+
+.sidebar-accordion-item.active .sidebar-accordion-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.sidebar-accordion-icon {
+    font-size: 0.8em;
+    transition: transform 0.2s;
+    width: 1em;
+    text-align: center;
+}
+
+/* アコーディオンコンテンツ */
+.sidebar-accordion-content {
+    display: none;
+    flex: 1;
+    flex-direction: column;
+    padding: 15px;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+.sidebar-accordion-item.active .sidebar-accordion-content {
+    display: flex;
+}
+
+/* ===========================================
+   デバッグ詳細セクション
+   =========================================== */
+
+.debug-details {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.debug-section {
+    background: #1a1a2e;
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.debug-section-header {
+    font-size: 11px;
+    font-weight: 600;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #333;
+}
+
+.debug-metrics {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.debug-metric-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+}
+
+.debug-metric-label {
+    font-size: 12px;
+    color: #aaa;
+    font-family: 'Monaco', 'Consolas', monospace;
+}
+
+.debug-metric-value {
+    font-size: 12px;
+    color: #0f0;
+    font-family: 'Monaco', 'Consolas', monospace;
+    font-weight: 600;
+}
+
+.debug-metric-total {
+    border-top: 1px solid #333;
+    margin-top: 4px;
+    padding-top: 8px;
+}
+
+.debug-metric-total .debug-metric-label {
+    color: #fff;
+}
+
+.debug-metric-total .debug-metric-value {
+    color: #0ff;
+    font-size: 14px;
+}
+
+.debug-metric-sub {
+    padding-left: 8px;
+}
+
+.debug-metric-sub .debug-metric-label {
+    color: #888;
+    font-size: 11px;
+}
+
+.debug-metric-sub .debug-metric-value {
+    font-size: 11px;
+}
+
+.debug-metric-max {
+    padding-left: 16px;
+}
+
+.debug-metric-max .debug-metric-label {
+    color: #666;
+    font-size: 10px;
+}
+
+.debug-metric-max .debug-metric-value {
+    font-size: 10px;
+    color: #999;
+}
+
+/* 画像追加ボタン */
+.sidebar-add-btn {
+    width: 100%;
+    margin-bottom: 12px;
+    padding: 10px 16px;
+}
+
+/* 画像ライブラリ（サイドバー内） */
+.sidebar-images-library {
+    flex: 1;
+    overflow-y: scroll;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 0;
+    /* スクロールバー常時表示 */
+    scrollbar-width: thin;
+    scrollbar-color: #ccc #f0f0f0;
+}
+
+/* WebKit系ブラウザでスクロールバー常時表示 */
+.sidebar-images-library::-webkit-scrollbar {
+    width: 8px;
+}
+
+.sidebar-images-library::-webkit-scrollbar-track {
+    background: #f0f0f0;
+    border-radius: 4px;
+}
+
+.sidebar-images-library::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+}
+
+.sidebar-images-library::-webkit-scrollbar-thumb:hover {
+    background: #aaa;
+}
+
+.sidebar-images-library .content-item {
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+/* コンテンツライブラリ */
+.content-library-actions {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.content-library-actions .sidebar-add-btn {
+    flex: 1;
+    font-size: 11px;
+    padding: 6px 8px;
+}
+
+/* ===========================================
+   パレットライブラリ
+   =========================================== */
+
+.palette-library-actions {
+    margin-bottom: 12px;
+}
+
+.palette-library-actions .sidebar-select {
+    width: 100%;
+}
+
+.sidebar-palette-library {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 0;
+    scrollbar-width: thin;
+    scrollbar-color: #ccc #f0f0f0;
+}
+
+.palette-item {
+    background: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.palette-item:hover {
+    border-color: #9f7aea;
+    box-shadow: 0 2px 8px rgba(159, 122, 234, 0.2);
+}
+
+.palette-item-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.palette-item-name {
+    font-size: 0.85em;
+    font-weight: 500;
+    color: #333;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+}
+
+.palette-item-count {
+    font-size: 0.75em;
+    color: #888;
+    white-space: nowrap;
+}
+
+.palette-item-delete {
+    padding: 2px 6px;
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.75em;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+
+.palette-item-delete:hover {
+    background: #dc2626;
+}
+
+.palette-color-bar {
+    width: 100%;
+    height: 20px;
+    border-radius: 4px;
+    overflow: hidden;
+    background: #f0f0f0;
+    image-rendering: pixelated;
+}
+
+.palette-color-bar img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    image-rendering: pixelated;
+}
+
+/* 出力設定 */
+.sidebar-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.sidebar-setting-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.sidebar-setting-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #667eea;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.sidebar-setting-row {
+    display: flex;
+    align-items: stretch;
+    gap: 12px;
+    overflow: hidden;
+}
+
+.sidebar-setting-fields {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.sidebar-setting-field {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.sidebar-setting-field label {
+    font-size: 12px;
+    color: #666;
+    width: 24px;
+    flex-shrink: 0;
+}
+
+.sidebar-setting-field input[type="number"] {
+    flex: 1;
+    min-width: 0;
+    padding: 5px 6px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 12px;
+    text-align: right;
+}
+
+.sidebar-setting-field input[type="number"]:focus {
+    border-color: #667eea;
+    outline: none;
+}
+
+.sidebar-setting-row > .origin-grid,
+.sidebar-setting-row > .sidebar-apply-btn {
+    flex: 0 0 96px;
+    width: 96px;
+    max-width: 96px;
+    min-width: 96px;
+}
+
+.sidebar-setting-row > .origin-grid {
+    aspect-ratio: 1;
+    align-self: flex-end;
+}
+
+.sidebar-apply-btn {
+    padding: 6px 0 !important;
+    font-size: 12px !important;
+}
+
+/* 表示倍率スライダー */
+.sidebar-scale-slider {
+    flex: 1;
+    min-width: 0;
+    height: 6px;
+    cursor: pointer;
+}
+
+.sidebar-scale-value {
+    min-width: 32px;
+    text-align: right;
+    font-size: 12px;
+    font-weight: 600;
+    color: #667eea;
+}
+
+.sidebar-hint {
+    font-size: 10px;
+    color: #888;
+    margin: 8px 0 0 0;
+    padding: 0;
+}
+
+/* タイル分割設定 */
+.sidebar-select {
+    flex: 1;
+    padding: 6px 8px;
+    font-size: 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: white;
+    cursor: pointer;
+}
+
+.sidebar-select:focus {
+    border-color: #667eea;
+    outline: none;
+}
+
+.sidebar-tile-custom {
+    margin-top: 8px;
+}
+
+/* チェックボックスラベル */
+.sidebar-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    color: #555;
+}
+
+.sidebar-checkbox-label input[type="checkbox"] {
+    margin: 0;
+    cursor: pointer;
+}
+
+.sidebar-checkbox-small {
+    font-size: 11px;
+}
+
+/* サイドバーオーバーレイ */
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s;
+}
+
+.sidebar-overlay.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* コンテナの左マージン調整（PC時） */
+@media (min-width: 769px) {
+    body.sidebar-open .container {
+        margin-left: 280px;
+        transition: margin-left 0.3s;
+    }
+
+    body.sidebar-open .debug-status-bar {
+        left: 280px;
+        transition: left 0.3s;
+    }
+
+    .container {
+        transition: margin-left 0.3s;
+    }
+
+    .debug-status-bar {
+        transition: left 0.3s;
+    }
+
+    .sidebar-toggle.open {
+        left: 280px;
+    }
+
+    /* PC時はオーバーレイを非表示（メインコンテンツ操作可能） */
+    .sidebar-overlay.visible {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+    }
+}
+
+/* ===========================================
+   レスポンシブ: モバイル対応
+   =========================================== */
+
+@media (max-width: 768px) {
+    /* サイドバートグルをヘッダー風に */
+    .sidebar-toggle {
+        top: 10px;
+        left: 10px;
+        transform: none;
+        width: 44px;
+        height: 44px;
+        border-radius: 8px;
+    }
+
+    .sidebar-toggle:hover {
+        width: 44px;
+    }
+
+    /* サイドバー開いている時、トグルをサイドバー内右上に移動 */
+    .sidebar-toggle.open {
+        left: calc(280px - 44px - 10px);
+    }
+
+    /* サイドバーを全幅に */
+    .sidebar {
+        width: 100%;
+        max-width: 280px;
+    }
+
+    /* オーバーレイを有効化 */
+    .sidebar.open ~ .sidebar-overlay {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    /* コンテナはマージンなし */
+    body.sidebar-open .container {
+        margin-left: 0;
+        max-width: none;
+    }
+
+    /* ヘッダーのパディング調整（トグルボタン分） */
+    header {
+        padding-left: 60px;
+        flex-wrap: wrap;
+        gap: 4px 12px;
+    }
+
+    header h1 {
+        font-size: 1em;
+    }
+}
+
+/* ========================================
+   デバッグステータスバー
+   ======================================== */
+
+.debug-status-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 24px;
+    background: rgba(0, 0, 0, 0.85);
+    color: #0f0;
+    font-family: 'Monaco', 'Consolas', 'Courier New', monospace;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    gap: 8px;
+    z-index: 900;  /* サイドバー(1000)より下 */
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.debug-status-bar:hover {
+    background: rgba(0, 0, 0, 0.95);
+}
+
+.debug-status-bar:active {
+    background: rgba(30, 30, 60, 0.95);
+}
+
+.debug-status-label {
+    color: #888;
+}
+
+.debug-status-item {
+    color: #0f0;
+}
+
+.debug-status-sep {
+    color: #444;
+}
+
+.debug-status-details {
+    color: #0aa;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ステータスバー分のパディング調整 */
+body {
+    padding-bottom: 24px;
+}
+
+.container {
+    /* モバイルブラウザのアドレスバー等を考慮した高さ設定 */
+    height: calc(100vh - 20px - 24px);              /* フォールバック（古いブラウザ用） */
+    height: calc(100dvh - 20px - 24px);             /* Dynamic Viewport Height（推奨） */
+    height: -webkit-fill-available;                 /* iOS Safari対応 */
+    /* bodyのpadding上10px + 下24px = 34pxだが、念のため44px引く設定を維持 */
+    max-height: calc(100dvh - 20px - 24px);         /* はみ出し防止 */
+}

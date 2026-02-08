@@ -1,0 +1,106 @@
+name: Build and Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+      - 'claude/*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 'latest'
+          actions-cache-folder: 'emsdk-cache'
+
+      - name: Verify Emscripten installation
+        run: |
+          emcc --version
+          em++ --version
+
+      - name: Build WebAssembly
+        run: |
+          chmod +x build.sh
+          ./build.sh --debug
+
+      - name: Verify build output
+        run: |
+          echo "=== Listing demo/web directory ==="
+          ls -la demo/web/
+          echo ""
+          echo "=== Checking for required files ==="
+
+          if [ -f "demo/web/fleximg.wasm" ]; then
+            echo "✓ fleximg.wasm found"
+            echo "  Size: $(ls -lh demo/web/fleximg.wasm | awk '{print $5}')"
+          else
+            echo "✗ fleximg.wasm NOT FOUND"
+            exit 1
+          fi
+
+          if [ -f "demo/web/fleximg.js" ]; then
+            echo "✓ fleximg.js found"
+            echo "  Size: $(ls -lh demo/web/fleximg.js | awk '{print $5}')"
+          else
+            echo "✗ fleximg.js NOT FOUND"
+            exit 1
+          fi
+
+          if [ -f "demo/web/version.js" ]; then
+            echo "✓ version.js found"
+            cat demo/web/version.js
+          else
+            echo "✗ version.js NOT FOUND"
+            exit 1
+          fi
+
+          echo ""
+          echo "=== All required files present ==="
+
+      - name: Prepare artifact (remove .gitignore to ensure all files are included)
+        run: |
+          if [ -f "demo/web/.gitignore" ]; then
+            rm demo/web/.gitignore
+            echo "Removed demo/web/.gitignore"
+          fi
+
+          echo "=== Files to be uploaded ==="
+          find demo/web -type f | sort
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: 'demo/web'
+
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

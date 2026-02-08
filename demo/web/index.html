@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>FlexImg demo</title>
+
+    <!-- キャッシュ制御 -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+
+    <script>
+        // CSSもキャッシュバスティング付きで読み込み
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'style.css?t=' + Date.now();
+        document.head.appendChild(link);
+    </script>
+</head>
+<body>
+    <!-- 左袖メニュー -->
+    <aside id="sidebar" class="sidebar">
+        <div class="sidebar-content">
+            <!-- コンテンツライブラリ（アコーディオン） -->
+            <div class="sidebar-accordion-item active" data-accordion="content">
+                <button class="sidebar-accordion-header">
+                    <span class="sidebar-accordion-icon">▼</span>
+                    <span>📁 コンテンツライブラリ</span>
+                </button>
+                <div class="sidebar-accordion-content">
+                    <div class="content-library-actions">
+                        <button id="sidebar-add-image-btn" class="primary-btn sidebar-add-btn">📁 画像を追加</button>
+                        <button id="sidebar-add-output-btn" class="primary-btn sidebar-add-btn">📤 出力を追加</button>
+                    </div>
+                    <div id="sidebar-images-library" class="sidebar-images-library"></div>
+                </div>
+            </div>
+
+            <!-- パレットライブラリ（アコーディオン） -->
+            <div class="sidebar-accordion-item" data-accordion="palette">
+                <button class="sidebar-accordion-header">
+                    <span class="sidebar-accordion-icon">▶</span>
+                    <span>🎨 パレットライブラリ</span>
+                </button>
+                <div class="sidebar-accordion-content">
+                    <div class="palette-library-actions">
+                        <select id="palette-preset-select" class="sidebar-select">
+                            <option value="">プリセットを追加...</option>
+                        </select>
+                    </div>
+                    <div id="sidebar-palette-library" class="sidebar-palette-library"></div>
+                </div>
+            </div>
+
+            <!-- デバッグ情報（アコーディオン） -->
+            <div class="sidebar-accordion-item" data-accordion="debug">
+                <button class="sidebar-accordion-header">
+                    <span class="sidebar-accordion-icon">▶</span>
+                    <span>🐛 デバッグ</span>
+                </button>
+                <div class="sidebar-accordion-content">
+                    <!-- デバッグセクションはJS側で動的生成 -->
+                    <div class="debug-details" id="debug-details"></div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- サイドバーオーバーレイ（モバイル用） -->
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+    <!-- サイドバートグルボタン -->
+    <button id="sidebar-toggle" class="sidebar-toggle" title="メニュー">
+        <span class="sidebar-toggle-icon">☰</span>
+    </button>
+
+    <div class="container">
+        <header>
+            <h1>🖼️ FlexImg demo</h1>
+            <p>複数画像のアフィン変換・合成プレビュー</p>
+            <div id="version-info" class="version-info"></div>
+        </header>
+
+        <!-- グローバルノードグラフ -->
+        <div class="node-graph-section">
+            <div class="node-graph-header">
+                <h2>🔗 ノードグラフ</h2>
+                <div class="node-graph-controls">
+                    <button id="copy-state-url-btn" class="secondary-btn small" title="現在の状態をURLとしてコピー">🔗 URLコピー</button>
+                    <button id="reset-state-btn" class="secondary-btn small danger" title="保存された状態をクリアしてリセット">🔄 リセット</button>
+                    <div class="node-add-dropdown" id="node-add-dropdown">
+                        <button class="node-add-btn" id="node-add-btn">+ ノード追加</button>
+                        <div class="node-add-menu" id="node-add-menu">
+                            <!-- app.jsのpopulateNodeAddMenu()で動的生成 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="node-graph-canvas-container">
+                <svg id="node-graph-canvas" width="1600" height="1200" viewBox="0 0 1600 1200">
+                    <!-- すべてのノード（画像、フィルタ、合成、出力）がここに描画される -->
+                </svg>
+                <div class="node-graph-help">
+                    💡 ヒント: ノードをタップ＆ドラッグで移動 | スライダーでパラメータ調整
+                </div>
+            </div>
+        </div>
+
+        <!-- スプリッターバー -->
+        <div id="splitter" class="splitter">
+            <div class="splitter-handle"></div>
+        </div>
+
+        <div class="main-content">
+            <!-- プレビューエリア -->
+            <div class="preview-section">
+                <div class="canvas-container">
+                    <canvas id="preview-canvas"></canvas>
+                </div>
+                <div class="canvas-controls">
+                    <div class="preview-scale-control">
+                        <span class="scale-label">倍率</span>
+                        <input type="range" id="sidebar-preview-scale" min="1" max="5" step="0.1" value="1" class="scale-slider">
+                        <span id="sidebar-preview-scale-value" class="scale-value">1x</span>
+                    </div>
+                    <button id="download-btn" class="primary-btn">📥 画像を保存</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 隠しファイル入力 -->
+        <input type="file" id="image-input" accept="image/*" style="display:none;" multiple>
+    </div>
+
+    <!-- コンテンツアイテムテンプレート（画像・出力共通） -->
+    <template id="content-item-template">
+        <div class="content-item">
+            <div class="content-thumbnail">
+                <img src="" alt="thumbnail">
+            </div>
+            <div class="content-info">
+                <span class="content-name">Content</span>
+                <div class="content-row">
+                    <span class="content-size">0x0</span>
+                    <div class="content-actions">
+                        <button class="add-node-btn" title="ノード追加">+ ノード</button>
+                        <button class="delete-btn" title="削除">×</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- ノードコンテキストメニュー -->
+    <div id="node-context-menu" class="context-menu" style="display: none;">
+        <div class="context-menu-item" id="detail-node-menu">⚙️ 詳細</div>
+        <div class="context-menu-item" id="add-input-menu" style="display: none;">➕ 入力を追加</div>
+        <div class="context-menu-item" id="add-output-menu" style="display: none;">➕ 出力を追加</div>
+        <div class="context-menu-item" id="delete-node-menu">🗑️ ノードを削除</div>
+    </div>
+
+    <!-- ノード詳細パネル -->
+    <div id="node-detail-panel" class="node-detail-panel" style="display: none;">
+        <div class="node-detail-header">
+            <span class="node-detail-title">ノード詳細</span>
+            <button class="node-detail-close">×</button>
+        </div>
+        <div class="node-detail-content"></div>
+    </div>
+
+    <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <p>WebAssembly読み込み中...</p>
+    </div>
+
+    <!-- デバッグステータスバー -->
+    <div id="debug-status-bar" class="debug-status-bar">
+        <span class="debug-status-label">⏱️ Perf:</span>
+        <span id="debug-perf-total" class="debug-status-item">--</span>
+        <span class="debug-status-sep">|</span>
+        <span id="debug-perf-details" class="debug-status-details">--</span>
+    </div>
+
+    <!-- キャッシュバスティング付きスクリプト読み込み -->
+    <script>
+        // version.jsを同期的に読み込む
+        const versionScript = document.createElement('script');
+        versionScript.src = 'version.js?t=' + Date.now();
+        document.head.appendChild(versionScript);
+
+        versionScript.onload = function() {
+            // ビルド情報からバージョンを取得（gitCommit or buildDate）
+            const version = (typeof BUILD_INFO !== 'undefined')
+                ? BUILD_INFO.gitCommit
+                : Date.now();
+
+            console.log('Loading scripts with cache buster:', version);
+
+            // WebAssemblyモジュールを読み込み
+            const wasmScript = document.createElement('script');
+            wasmScript.src = 'fleximg.js?v=' + version;
+            document.head.appendChild(wasmScript);
+
+            // アプリケーションロジックを読み込み（WASMの後に）
+            wasmScript.onload = function() {
+                const appScript = document.createElement('script');
+                appScript.type = 'module';
+                appScript.src = 'app.js?v=' + version;
+                document.head.appendChild(appScript);
+            };
+        };
+    </script>
+</body>
+</html>
