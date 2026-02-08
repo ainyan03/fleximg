@@ -23,12 +23,12 @@ namespace FLEXIMG_NAMESPACE {
 //   - 境界ピクセルはクランプ（端のピクセルを複製）
 //
 enum EdgeFadeFlags : uint8_t {
-  EdgeFade_None = 0,
-  EdgeFade_Left = 0x01,
-  EdgeFade_Right = 0x02,
-  EdgeFade_Top = 0x04,
-  EdgeFade_Bottom = 0x08,
-  EdgeFade_All = 0x0F
+    EdgeFade_None   = 0,
+    EdgeFade_Left   = 0x01,
+    EdgeFade_Right  = 0x02,
+    EdgeFade_Top    = 0x04,
+    EdgeFade_Bottom = 0x08,
+    EdgeFade_All    = 0x0F
 };
 
 // ========================================================================
@@ -37,8 +37,8 @@ enum EdgeFadeFlags : uint8_t {
 
 // バイリニア補間の重み（チャンク用、fx/fyのみ）
 struct BilinearWeightXY {
-  uint8_t fx; // X方向小数部（0-255）
-  uint8_t fy; // Y方向小数部（0-255）
+    uint8_t fx;  // X方向小数部（0-255）
+    uint8_t fy;  // Y方向小数部（0-255）
 };
 
 // edgeFlags の説明（チャンク用の別配列として管理、copyQuadDDA 内で生成）
@@ -58,18 +58,17 @@ struct BilinearWeightXY {
 //
 
 struct DDAParam {
-  int32_t srcStride; // ソースのストライド（バイト数）
-  int32_t srcWidth;  // ソース幅（copyQuadDDA用、境界クランプ）
-  int32_t srcHeight; // ソース高さ（copyQuadDDA用、境界クランプ）
-  int_fixed srcX;    // ソース開始X座標（Q16.16固定小数点）
-  int_fixed srcY;    // ソース開始Y座標（Q16.16固定小数点）
-  int_fixed incrX;   // 1ピクセルあたりのX増分（Q16.16固定小数点）
-  int_fixed incrY;   // 1ピクセルあたりのY増分（Q16.16固定小数点）
+    int32_t srcStride;  // ソースのストライド（バイト数）
+    int32_t srcWidth;   // ソース幅（copyQuadDDA用、境界クランプ）
+    int32_t srcHeight;  // ソース高さ（copyQuadDDA用、境界クランプ）
+    int_fixed srcX;     // ソース開始X座標（Q16.16固定小数点）
+    int_fixed srcY;     // ソース開始Y座標（Q16.16固定小数点）
+    int_fixed incrX;    // 1ピクセルあたりのX増分（Q16.16固定小数点）
+    int_fixed incrY;    // 1ピクセルあたりのY増分（Q16.16固定小数点）
 
-  // バイリニア補間用
-  BilinearWeightXY *weightsXY; // 重み出力先（チャンク用）
-  uint8_t
-      *edgeFlags; // 境界フラグ出力先（チャンク用、copyQuadDDA内で生成、必須）
+    // バイリニア補間用
+    BilinearWeightXY *weightsXY;  // 重み出力先（チャンク用）
+    uint8_t *edgeFlags;           // 境界フラグ出力先（チャンク用、copyQuadDDA内で生成、必須）
 };
 
 // DDA行転写関数の型定義
@@ -77,16 +76,14 @@ struct DDAParam {
 // srcData: ソースデータ先頭
 // count: 転写ピクセル数
 // param: DDAパラメータ（const、関数内でローカルコピーして使用）
-using CopyRowDDA_Func = void (*)(uint8_t *dst, const uint8_t *srcData,
-                                 int_fast16_t count, const DDAParam *param);
+using CopyRowDDA_Func = void (*)(uint8_t *dst, const uint8_t *srcData, int_fast16_t count, const DDAParam *param);
 
 // DDA 4ピクセル抽出関数の型定義（バイリニア補間用）
 // dst: 出力先バッファ（[p00,p10,p01,p11] × count）
 // srcData: ソースデータ先頭
 // count: 抽出ピクセル数
 // param: DDAパラメータ（srcWidth/srcHeight/weightsを使用）
-using CopyQuadDDA_Func = void (*)(uint8_t *dst, const uint8_t *srcData,
-                                  int_fast16_t count, const DDAParam *param);
+using CopyQuadDDA_Func = void (*)(uint8_t *dst, const uint8_t *srcData, int_fast16_t count, const DDAParam *param);
 
 // 前方宣言
 struct PixelFormatDescriptor;
@@ -102,30 +99,33 @@ using PixelFormatID = const PixelFormatDescriptor *;
 // ========================================================================
 
 struct PixelAuxInfo {
-  // パレット情報（インデックスフォーマット用）
-  const void *palette = nullptr;         // パレットデータポインタ（非所有）
-  PixelFormatID paletteFormat = nullptr; // パレットエントリのフォーマット
+    // パレット情報（インデックスフォーマット用）
+    const void *palette         = nullptr;  // パレットデータポインタ（非所有）
+    PixelFormatID paletteFormat = nullptr;  // パレットエントリのフォーマット
 
-  // カラーキー情報（toStraight後にin-placeで適用）
-  uint32_t colorKeyRGBA8 = 0;   // カラーキー比較値（RGBA8、alpha込み）
-  uint32_t colorKeyReplace = 0; // カラーキー差し替え値（通常は透明黒0）
-  // colorKeyRGBA8 == colorKeyReplace の場合は無効
+    // カラーキー情報（toStraight後にin-placeで適用）
+    uint32_t colorKeyRGBA8   = 0;  // カラーキー比較値（RGBA8、alpha込み）
+    uint32_t colorKeyReplace = 0;  // カラーキー差し替え値（通常は透明黒0）
+    // colorKeyRGBA8 == colorKeyReplace の場合は無効
 
-  uint16_t paletteColorCount = 0; // パレットエントリ数
-  uint8_t alphaMultiplier = 255;  // アルファ係数（1 byte）AlphaNodeで使用
-  uint8_t pixelOffsetInByte =
-      0; // bit-packed用: 1バイト内でのピクセル位置 (0 - PixelsPerByte-1)
-         // Index1: 0-7, Index2: 0-3, Index4: 0-1
+    uint16_t paletteColorCount = 0;    // パレットエントリ数
+    uint8_t alphaMultiplier    = 255;  // アルファ係数（1 byte）AlphaNodeで使用
+    uint8_t pixelOffsetInByte  = 0;    // bit-packed用: 1バイト内でのピクセル位置 (0 - PixelsPerByte-1)
+                                       // Index1: 0-7, Index2: 0-3, Index4: 0-1
 
-  // デフォルトコンストラクタ
-  constexpr PixelAuxInfo() = default;
+    // デフォルトコンストラクタ
+    constexpr PixelAuxInfo() = default;
 
-  // アルファ係数指定
-  constexpr explicit PixelAuxInfo(uint8_t alpha) : alphaMultiplier(alpha) {}
+    // アルファ係数指定
+    constexpr explicit PixelAuxInfo(uint8_t alpha) : alphaMultiplier(alpha)
+    {
+    }
 
-  // カラーキー指定
-  constexpr PixelAuxInfo(uint32_t keyRGBA8, uint32_t replaceRGBA8)
-      : colorKeyRGBA8(keyRGBA8), colorKeyReplace(replaceRGBA8) {}
+    // カラーキー指定
+    constexpr PixelAuxInfo(uint32_t keyRGBA8, uint32_t replaceRGBA8)
+        : colorKeyRGBA8(keyRGBA8), colorKeyReplace(replaceRGBA8)
+    {
+    }
 };
 
 // ========================================================================
@@ -137,15 +137,19 @@ struct PixelAuxInfo {
 //
 
 struct PaletteData {
-  const void *data = nullptr;     // パレットデータ（非所有）
-  PixelFormatID format = nullptr; // 各エントリのフォーマット
-  uint16_t colorCount = 0;        // エントリ数
+    const void *data     = nullptr;  // パレットデータ（非所有）
+    PixelFormatID format = nullptr;  // 各エントリのフォーマット
+    uint16_t colorCount  = 0;        // エントリ数
 
-  constexpr PaletteData() = default;
-  constexpr PaletteData(const void *d, PixelFormatID f, uint16_t c)
-      : data(d), format(f), colorCount(c) {}
+    constexpr PaletteData() = default;
+    constexpr PaletteData(const void *d, PixelFormatID f, uint16_t c) : data(d), format(f), colorCount(c)
+    {
+    }
 
-  explicit operator bool() const { return data != nullptr; }
+    explicit operator bool() const
+    {
+        return data != nullptr;
+    }
 };
 
 // ========================================================================
@@ -154,15 +158,15 @@ struct PaletteData {
 
 // ビット順序（bit-packed形式用）
 enum class BitOrder {
-  MSBFirst, // 最上位ビットが先（例: 1bit bitmap）
-  LSBFirst  // 最下位ビットが先
+    MSBFirst,  // 最上位ビットが先（例: 1bit bitmap）
+    LSBFirst   // 最下位ビットが先
 };
 
 // バイト順序（multi-byte形式用）
 enum class ByteOrder {
-  BigEndian,    // ビッグエンディアン（ネットワークバイトオーダー）
-  LittleEndian, // リトルエンディアン（x86等）
-  Native        // ネイティブ（プラットフォーム依存）
+    BigEndian,     // ビッグエンディアン（ネットワークバイトオーダー）
+    LittleEndian,  // リトルエンディアン（x86等）
+    Native         // ネイティブ（プラットフォーム依存）
 };
 
 // ========================================================================
@@ -170,74 +174,71 @@ enum class ByteOrder {
 // ========================================================================
 
 struct PixelFormatDescriptor {
-  // ========================================================================
-  // 変換関数の型定義
-  // ========================================================================
-  // 統一シグネチャ: void(*)(void* dst, const void* src, size_t pixelCount,
-  // const PixelAuxInfo* aux)
+    // ========================================================================
+    // 変換関数の型定義
+    // ========================================================================
+    // 統一シグネチャ: void(*)(void* dst, const void* src, size_t pixelCount,
+    // const PixelAuxInfo* aux)
 
-  // Straight形式（RGBA8_Straight）との相互変換
-  using ConvertFunc = void (*)(void *dst, const void *src, size_t pixelCount,
-                               const PixelAuxInfo *aux);
-  using ToStraightFunc = ConvertFunc;
-  using FromStraightFunc = ConvertFunc;
+    // Straight形式（RGBA8_Straight）との相互変換
+    using ConvertFunc      = void (*)(void *dst, const void *src, size_t pixelCount, const PixelAuxInfo *aux);
+    using ToStraightFunc   = ConvertFunc;
+    using FromStraightFunc = ConvertFunc;
 
-  // インデックス展開関数（インデックス値 →
-  // パレットフォーマットのピクセルデータ） aux->palette, aux->paletteFormat
-  // を参照してインデックスをパレットエントリに展開
-  // 出力はパレットフォーマット（RGBA8とは限らない）
-  using ExpandIndexFunc = ConvertFunc;
+    // インデックス展開関数（インデックス値 →
+    // パレットフォーマットのピクセルデータ） aux->palette, aux->paletteFormat
+    // を参照してインデックスをパレットエントリに展開
+    // 出力はパレットフォーマット（RGBA8とは限らない）
+    using ExpandIndexFunc = ConvertFunc;
 
-  // BlendUnderStraightFunc:
-  // srcフォーマットからStraight形式(RGBA8)のdstへunder合成
-  //   - dst が不透明なら何もしない（スキップ）
-  //   - dst が透明なら単純コピー
-  //   - dst が半透明ならunder合成（unpremultiply含む）
-  using BlendUnderStraightFunc = ConvertFunc;
+    // BlendUnderStraightFunc:
+    // srcフォーマットからStraight形式(RGBA8)のdstへunder合成
+    //   - dst が不透明なら何もしない（スキップ）
+    //   - dst が透明なら単純コピー
+    //   - dst が半透明ならunder合成（unpremultiply含む）
+    using BlendUnderStraightFunc = ConvertFunc;
 
-  // SwapEndianFunc: エンディアン違いの兄弟フォーマットとの変換
-  using SwapEndianFunc = ConvertFunc;
+    // SwapEndianFunc: エンディアン違いの兄弟フォーマットとの変換
+    using SwapEndianFunc = ConvertFunc;
 
-  // ========================================================================
-  // メンバ（アライメント効率順: ポインタ → 4byte → 2byte → 1byte）
-  // ========================================================================
+    // ========================================================================
+    // メンバ（アライメント効率順: ポインタ → 4byte → 2byte → 1byte）
+    // ========================================================================
 
-  // フォーマット名
-  const char *name;
+    // フォーマット名
+    const char *name;
 
-  // 変換関数ポインタ（ダイレクトカラー用）
-  ToStraightFunc toStraight;
-  FromStraightFunc fromStraight;
-  ExpandIndexFunc expandIndex; // 非インデックスフォーマットでは nullptr
-  BlendUnderStraightFunc blendUnderStraight; // 未実装の場合は nullptr
+    // 変換関数ポインタ（ダイレクトカラー用）
+    ToStraightFunc toStraight;
+    FromStraightFunc fromStraight;
+    ExpandIndexFunc expandIndex;                // 非インデックスフォーマットでは nullptr
+    BlendUnderStraightFunc blendUnderStraight;  // 未実装の場合は nullptr
 
-  // エンディアン変換（兄弟フォーマットがある場合）
-  const PixelFormatDescriptor
-      *siblingEndian;        // エンディアン違いの兄弟（なければnullptr）
-  SwapEndianFunc swapEndian; // バイトスワップ関数
+    // エンディアン変換（兄弟フォーマットがある場合）
+    const PixelFormatDescriptor *siblingEndian;  // エンディアン違いの兄弟（なければnullptr）
+    SwapEndianFunc swapEndian;                   // バイトスワップ関数
 
-  // DDA転写関数
-  CopyRowDDA_Func copyRowDDA; // DDA方式の行転写（nullptrなら未対応）
-  CopyQuadDDA_Func
-      copyQuadDDA; // DDA方式の4ピクセル抽出（バイリニア用、nullptrなら未対応）
+    // DDA転写関数
+    CopyRowDDA_Func copyRowDDA;    // DDA方式の行転写（nullptrなら未対応）
+    CopyQuadDDA_Func copyQuadDDA;  // DDA方式の4ピクセル抽出（バイリニア用、nullptrなら未対応）
 
-  // エンディアン情報
-  BitOrder bitOrder;
-  ByteOrder byteOrder;
+    // エンディアン情報
+    BitOrder bitOrder;
+    ByteOrder byteOrder;
 
-  // パレット情報（インデックスカラーの場合）
-  uint16_t maxPaletteSize;
+    // パレット情報（インデックスカラーの場合）
+    uint16_t maxPaletteSize;
 
-  // 基本情報
-  uint8_t bitsPerPixel;  // ピクセルあたりのビット数
-  uint8_t bytesPerPixel; // ピクセルあたりのバイト数（切り上げ）
-  uint8_t pixelsPerUnit; // 1ユニットあたりのピクセル数
-  uint8_t bytesPerUnit;  // 1ユニットあたりのバイト数
-  uint8_t channelCount;  // チャンネル総数
+    // 基本情報
+    uint8_t bitsPerPixel;   // ピクセルあたりのビット数
+    uint8_t bytesPerPixel;  // ピクセルあたりのバイト数（切り上げ）
+    uint8_t pixelsPerUnit;  // 1ユニットあたりのピクセル数
+    uint8_t bytesPerUnit;   // 1ユニットあたりのバイト数
+    uint8_t channelCount;   // チャンネル総数
 
-  // フラグ
-  bool hasAlpha;
-  bool isIndexed;
+    // フラグ
+    bool hasAlpha;
+    bool isIndexed;
 };
 
 // ========================================================================
@@ -249,34 +250,24 @@ namespace detail {
 
 // BytesPerPixel別 DDA転写関数（前方宣言）
 // 実装は dda.h で提供（FLEXIMG_IMPLEMENTATION部）
-void copyRowDDA_1Byte(uint8_t *dst, const uint8_t *srcData, int_fast16_t count,
-                      const DDAParam *param);
-void copyRowDDA_2Byte(uint8_t *dst, const uint8_t *srcData, int_fast16_t count,
-                      const DDAParam *param);
-void copyRowDDA_3Byte(uint8_t *dst, const uint8_t *srcData, int_fast16_t count,
-                      const DDAParam *param);
-void copyRowDDA_4Byte(uint8_t *dst, const uint8_t *srcData, int_fast16_t count,
-                      const DDAParam *param);
+void copyRowDDA_1Byte(uint8_t *dst, const uint8_t *srcData, int_fast16_t count, const DDAParam *param);
+void copyRowDDA_2Byte(uint8_t *dst, const uint8_t *srcData, int_fast16_t count, const DDAParam *param);
+void copyRowDDA_3Byte(uint8_t *dst, const uint8_t *srcData, int_fast16_t count, const DDAParam *param);
+void copyRowDDA_4Byte(uint8_t *dst, const uint8_t *srcData, int_fast16_t count, const DDAParam *param);
 
 // BytesPerPixel別 DDA 4ピクセル抽出関数（前方宣言）
-void copyQuadDDA_1Byte(uint8_t *dst, const uint8_t *srcData, int_fast16_t count,
-                       const DDAParam *param);
-void copyQuadDDA_2Byte(uint8_t *dst, const uint8_t *srcData, int_fast16_t count,
-                       const DDAParam *param);
-void copyQuadDDA_3Byte(uint8_t *dst, const uint8_t *srcData, int_fast16_t count,
-                       const DDAParam *param);
-void copyQuadDDA_4Byte(uint8_t *dst, const uint8_t *srcData, int_fast16_t count,
-                       const DDAParam *param);
+void copyQuadDDA_1Byte(uint8_t *dst, const uint8_t *srcData, int_fast16_t count, const DDAParam *param);
+void copyQuadDDA_2Byte(uint8_t *dst, const uint8_t *srcData, int_fast16_t count, const DDAParam *param);
+void copyQuadDDA_3Byte(uint8_t *dst, const uint8_t *srcData, int_fast16_t count, const DDAParam *param);
+void copyQuadDDA_4Byte(uint8_t *dst, const uint8_t *srcData, int_fast16_t count, const DDAParam *param);
 
 // BitsPerPixel別 bit-packed DDA転写関数（前方宣言）
 // 実装は dda.h で提供（bit_packed_index.h インクルード後）
 template <int BitsPerPixel, BitOrder Order>
-void copyRowDDA_Bit(uint8_t *dst, const uint8_t *srcData, int_fast16_t count,
-                    const DDAParam *param);
+void copyRowDDA_Bit(uint8_t *dst, const uint8_t *srcData, int_fast16_t count, const DDAParam *param);
 
 template <int BitsPerPixel, BitOrder Order>
-void copyQuadDDA_Bit(uint8_t *dst, const uint8_t *srcData, int_fast16_t count,
-                     const DDAParam *param);
+void copyQuadDDA_Bit(uint8_t *dst, const uint8_t *srcData, int_fast16_t count, const DDAParam *param);
 
 // 8bit LUT → Nbit 変換（4ピクセル単位展開）
 // T = uint32_t: rgb332_toStraight, index8_expandIndex (bpc==4) 等で共用
@@ -285,19 +276,19 @@ template <typename T>
 void lut8toN(T *d, const uint8_t *s, size_t pixelCount, const T *lut);
 
 // 便利エイリアス
-inline void lut8to32(uint32_t *d, const uint8_t *s, size_t pixelCount,
-                     const uint32_t *lut) {
-  lut8toN(d, s, pixelCount, lut);
+inline void lut8to32(uint32_t *d, const uint8_t *s, size_t pixelCount, const uint32_t *lut)
+{
+    lut8toN(d, s, pixelCount, lut);
 }
-inline void lut8to16(uint16_t *d, const uint8_t *s, size_t pixelCount,
-                     const uint16_t *lut) {
-  lut8toN(d, s, pixelCount, lut);
+inline void lut8to16(uint16_t *d, const uint8_t *s, size_t pixelCount, const uint16_t *lut)
+{
+    lut8toN(d, s, pixelCount, lut);
 }
 
-} // namespace detail
-} // namespace pixel_format
+}  // namespace detail
+}  // namespace pixel_format
 
-} // namespace FLEXIMG_NAMESPACE
+}  // namespace FLEXIMG_NAMESPACE
 
 // ------------------------------------------------------------------------
 // 内部ヘルパー関数（実装部）
@@ -309,47 +300,45 @@ namespace pixel_format {
 namespace detail {
 
 template <typename T>
-void lut8toN(T *d, const uint8_t *s, size_t pixelCount, const T *lut) {
-  while (pixelCount & 3) {
-    auto v0 = s[0];
-    ++s;
-    auto l0 = lut[v0];
-    --pixelCount;
-    d[0] = l0;
-    ++d;
-  }
-  pixelCount >>= 2;
-  if (pixelCount == 0)
-    return;
-  do {
-    auto v0 = s[0];
-    auto v1 = s[1];
-    auto v2 = s[2];
-    auto v3 = s[3];
-    s += 4;
-    auto l0 = lut[v0];
-    auto l1 = lut[v1];
-    auto l2 = lut[v2];
-    auto l3 = lut[v3];
-    d[0] = l0;
-    d[1] = l1;
-    d[2] = l2;
-    d[3] = l3;
-    d += 4;
-  } while (--pixelCount);
+void lut8toN(T *d, const uint8_t *s, size_t pixelCount, const T *lut)
+{
+    while (pixelCount & 3) {
+        auto v0 = s[0];
+        ++s;
+        auto l0 = lut[v0];
+        --pixelCount;
+        d[0] = l0;
+        ++d;
+    }
+    pixelCount >>= 2;
+    if (pixelCount == 0) return;
+    do {
+        auto v0 = s[0];
+        auto v1 = s[1];
+        auto v2 = s[2];
+        auto v3 = s[3];
+        s += 4;
+        auto l0 = lut[v0];
+        auto l1 = lut[v1];
+        auto l2 = lut[v2];
+        auto l3 = lut[v3];
+        d[0]    = l0;
+        d[1]    = l1;
+        d[2]    = l2;
+        d[3]    = l3;
+        d += 4;
+    } while (--pixelCount);
 }
 
 // 明示的インスタンス化（非inlineを維持）
-template void lut8toN<uint16_t>(uint16_t *, const uint8_t *, size_t,
-                                const uint16_t *);
-template void lut8toN<uint32_t>(uint32_t *, const uint8_t *, size_t,
-                                const uint32_t *);
+template void lut8toN<uint16_t>(uint16_t *, const uint8_t *, size_t, const uint16_t *);
+template void lut8toN<uint32_t>(uint32_t *, const uint8_t *, size_t, const uint32_t *);
 
-} // namespace detail
-} // namespace pixel_format
-} // namespace FLEXIMG_NAMESPACE
+}  // namespace detail
+}  // namespace pixel_format
+}  // namespace FLEXIMG_NAMESPACE
 
-#endif // FLEXIMG_IMPLEMENTATION
+#endif  // FLEXIMG_IMPLEMENTATION
 
 // ========================================================================
 // 各ピクセルフォーマット（個別ヘッダ）
@@ -376,37 +365,33 @@ namespace FLEXIMG_NAMESPACE {
 
 // 組み込みフォーマット一覧（名前検索用）
 inline const PixelFormatID builtinFormats[] = {
-    PixelFormatIDs::RGBA8_Straight, PixelFormatIDs::RGB565_LE,
-    PixelFormatIDs::RGB565_BE,      PixelFormatIDs::RGB332,
-    PixelFormatIDs::RGB888,         PixelFormatIDs::BGR888,
-    PixelFormatIDs::Alpha8,         PixelFormatIDs::Grayscale8,
-    PixelFormatIDs::Index8,         PixelFormatIDs::Index1_MSB,
-    PixelFormatIDs::Index1_LSB,     PixelFormatIDs::Index2_MSB,
-    PixelFormatIDs::Index2_LSB,     PixelFormatIDs::Index4_MSB,
-    PixelFormatIDs::Index4_LSB,     PixelFormatIDs::Grayscale1_MSB,
-    PixelFormatIDs::Grayscale1_LSB, PixelFormatIDs::Grayscale2_MSB,
-    PixelFormatIDs::Grayscale2_LSB, PixelFormatIDs::Grayscale4_MSB,
-    PixelFormatIDs::Grayscale4_LSB,
+    PixelFormatIDs::RGBA8_Straight, PixelFormatIDs::RGB565_LE,      PixelFormatIDs::RGB565_BE,
+    PixelFormatIDs::RGB332,         PixelFormatIDs::RGB888,         PixelFormatIDs::BGR888,
+    PixelFormatIDs::Alpha8,         PixelFormatIDs::Grayscale8,     PixelFormatIDs::Index8,
+    PixelFormatIDs::Index1_MSB,     PixelFormatIDs::Index1_LSB,     PixelFormatIDs::Index2_MSB,
+    PixelFormatIDs::Index2_LSB,     PixelFormatIDs::Index4_MSB,     PixelFormatIDs::Index4_LSB,
+    PixelFormatIDs::Grayscale1_MSB, PixelFormatIDs::Grayscale1_LSB, PixelFormatIDs::Grayscale2_MSB,
+    PixelFormatIDs::Grayscale2_LSB, PixelFormatIDs::Grayscale4_MSB, PixelFormatIDs::Grayscale4_LSB,
 };
 
-inline constexpr size_t builtinFormatsCount =
-    sizeof(builtinFormats) / sizeof(builtinFormats[0]);
+inline constexpr size_t builtinFormatsCount = sizeof(builtinFormats) / sizeof(builtinFormats[0]);
 
 // 名前からフォーマットを取得（見つからなければ nullptr）
-inline PixelFormatID getFormatByName(const char *name) {
-  if (!name)
-    return nullptr;
-  for (size_t i = 0; i < builtinFormatsCount; ++i) {
-    if (std::strcmp(builtinFormats[i]->name, name) == 0) {
-      return builtinFormats[i];
+inline PixelFormatID getFormatByName(const char *name)
+{
+    if (!name) return nullptr;
+    for (size_t i = 0; i < builtinFormatsCount; ++i) {
+        if (std::strcmp(builtinFormats[i]->name, name) == 0) {
+            return builtinFormats[i];
+        }
     }
-  }
-  return nullptr;
+    return nullptr;
 }
 
 // フォーマット名を取得
-inline const char *getFormatName(PixelFormatID formatID) {
-  return formatID ? formatID->name : "unknown";
+inline const char *getFormatName(PixelFormatID formatID)
+{
+    return formatID ? formatID->name : "unknown";
 }
 
 // ========================================================================
@@ -424,55 +409,57 @@ inline const char *getFormatName(PixelFormatID formatID) {
 //
 
 struct FormatConverter {
-  // 解決済み変換関数（分岐なし）
-  using ConvertFunc = void (*)(void *dst, const void *src, size_t pixelCount,
-                               const void *ctx);
-  ConvertFunc func = nullptr;
+    // 解決済み変換関数（分岐なし）
+    using ConvertFunc = void (*)(void *dst, const void *src, size_t pixelCount, const void *ctx);
+    ConvertFunc func  = nullptr;
 
-  // 解決済みコンテキスト（Prepare 時に確定）
-  struct Context {
-    // 解決済み関数ポインタ
-    PixelFormatDescriptor::ExpandIndexFunc expandIndex = nullptr;
-    PixelFormatDescriptor::ToStraightFunc toStraight = nullptr;
-    PixelFormatDescriptor::FromStraightFunc fromStraight = nullptr;
+    // 解決済みコンテキスト（Prepare 時に確定）
+    struct Context {
+        // 解決済み関数ポインタ
+        PixelFormatDescriptor::ExpandIndexFunc expandIndex   = nullptr;
+        PixelFormatDescriptor::ToStraightFunc toStraight     = nullptr;
+        PixelFormatDescriptor::FromStraightFunc fromStraight = nullptr;
 
-    // パレット情報（Index 展開用）
-    const void *palette = nullptr;
-    PixelFormatID paletteFormat = nullptr;
-    uint16_t paletteColorCount = 0;
+        // パレット情報（Index 展開用）
+        const void *palette         = nullptr;
+        PixelFormatID paletteFormat = nullptr;
+        uint16_t paletteColorCount  = 0;
 
-    // フォーマット情報（memcpy パス用）
-    uint8_t pixelsPerUnit = 1;
-    uint8_t bytesPerUnit = 4;
+        // フォーマット情報（memcpy パス用）
+        uint8_t pixelsPerUnit = 1;
+        uint8_t bytesPerUnit  = 4;
 
-    // カラーキー情報（toStraight後にin-placeで適用）
-    uint32_t colorKeyRGBA8 = 0;
-    uint32_t colorKeyReplace = 0;
+        // カラーキー情報（toStraight後にin-placeで適用）
+        uint32_t colorKeyRGBA8   = 0;
+        uint32_t colorKeyReplace = 0;
 
-    // BytesPerPixel情報（チャンク処理のポインタ進行用）
-    uint8_t srcBytesPerPixel = 0;
-    uint8_t dstBytesPerPixel = 0;
+        // BytesPerPixel情報（チャンク処理のポインタ進行用）
+        uint8_t srcBytesPerPixel = 0;
+        uint8_t dstBytesPerPixel = 0;
 
-    // パレット展開時のBytesPerPixel（中間バッファ用）
-    uint8_t paletteBytesPerPixel = 0;
+        // パレット展開時のBytesPerPixel（中間バッファ用）
+        uint8_t paletteBytesPerPixel = 0;
 
-    // bit-packed用: 1バイト内でのピクセル位置（0 - PixelsPerByte-1）
-    uint8_t pixelOffsetInByte = 0;
-  } ctx;
+        // bit-packed用: 1バイト内でのピクセル位置（0 - PixelsPerByte-1）
+        uint8_t pixelOffsetInByte = 0;
+    } ctx;
 
-  // 行変換実行（分岐なし）
-  void operator()(void *dst, const void *src, size_t pixelCount) const {
-    func(dst, src, pixelCount, &ctx);
-  }
+    // 行変換実行（分岐なし）
+    void operator()(void *dst, const void *src, size_t pixelCount) const
+    {
+        func(dst, src, pixelCount, &ctx);
+    }
 
-  explicit operator bool() const { return func != nullptr; }
+    explicit operator bool() const
+    {
+        return func != nullptr;
+    }
 };
 
 // 変換パス解決関数
 // srcFormat/dstFormat 間の最適な変換関数を事前解決し、FormatConverter を返す。
 // チャンク処理により中間バッファはスタック上に確保されるため、アロケータ不要。
-FormatConverter resolveConverter(PixelFormatID srcFormat,
-                                 PixelFormatID dstFormat,
+FormatConverter resolveConverter(PixelFormatID srcFormat, PixelFormatID dstFormat,
                                  const PixelAuxInfo *srcAux = nullptr);
 
 // ========================================================================
@@ -487,20 +474,20 @@ FormatConverter resolveConverter(PixelFormatID srcFormat,
 //
 // 内部で resolveConverter を使用して最適な変換パスを解決する。
 // 中間バッファが必要な場合は DefaultAllocator 経由で一時確保される。
-inline void convertFormat(const void *src, PixelFormatID srcFormat, void *dst,
-                          PixelFormatID dstFormat, int_fast16_t pixelCount,
-                          const PixelAuxInfo *srcAux = nullptr,
-                          const PixelAuxInfo *dstAux = nullptr) {
-  (void)dstAux; // 現在の全呼び出し箇所で未使用
-  auto converter = resolveConverter(srcFormat, dstFormat, srcAux);
-  if (converter) {
-    converter(dst, src, pixelCount);
-  }
+inline void convertFormat(const void *src, PixelFormatID srcFormat, void *dst, PixelFormatID dstFormat,
+                          int_fast16_t pixelCount, const PixelAuxInfo *srcAux = nullptr,
+                          const PixelAuxInfo *dstAux = nullptr)
+{
+    (void)dstAux;  // 現在の全呼び出し箇所で未使用
+    auto converter = resolveConverter(srcFormat, dstFormat, srcAux);
+    if (converter) {
+        converter(dst, src, pixelCount);
+    }
 }
 
-} // namespace FLEXIMG_NAMESPACE
+}  // namespace FLEXIMG_NAMESPACE
 
 // FormatConverter 実装（FLEXIMG_IMPLEMENTATION ガード内）
 #include "pixel_format/format_converter.h"
 
-#endif // FLEXIMG_PIXEL_FORMAT_H
+#endif  // FLEXIMG_PIXEL_FORMAT_H

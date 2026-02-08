@@ -20,26 +20,39 @@ namespace FLEXIMG_NAMESPACE {
 
 class BrightnessNode : public FilterNodeBase {
 public:
-  // ========================================
-  // パラメータ設定
-  // ========================================
+    // ========================================
+    // パラメータ設定
+    // ========================================
 
-  void setAmount(float amount) { params_.value1 = amount; }
-  float amount() const { return params_.value1; }
+    void setAmount(float amount)
+    {
+        params_.value1 = amount;
+    }
+    float amount() const
+    {
+        return params_.value1;
+    }
 
-  // ========================================
-  // Node インターフェース
-  // ========================================
+    // ========================================
+    // Node インターフェース
+    // ========================================
 
-  const char *name() const override { return "BrightnessNode"; }
+    const char *name() const override
+    {
+        return "BrightnessNode";
+    }
 
 protected:
-  filters::LineFilterFunc getFilterFunc() const override {
-    return &filters::brightness_line;
-  }
-  int nodeTypeForMetrics() const override { return NodeType::Brightness; }
+    filters::LineFilterFunc getFilterFunc() const override
+    {
+        return &filters::brightness_line;
+    }
+    int nodeTypeForMetrics() const override
+    {
+        return NodeType::Brightness;
+    }
 };
 
-} // namespace FLEXIMG_NAMESPACE
+}  // namespace FLEXIMG_NAMESPACE
 
-#endif // FLEXIMG_BRIGHTNESS_NODE_H
+#endif  // FLEXIMG_BRIGHTNESS_NODE_H

@@ -2,7 +2,7 @@
 #define FLEXIMG_FORMAT_METRICS_H
 
 #include "common.h"
-#include "perf_metrics.h" // FLEXIMG_DEBUG_PERF_METRICS マクロ
+#include "perf_metrics.h"  // FLEXIMG_DEBUG_PERF_METRICS マクロ
 #include <cstdint>
 
 namespace FLEXIMG_NAMESPACE {
@@ -37,31 +37,29 @@ namespace core {
 
 namespace FormatIdx {
 constexpr uint_fast8_t RGBA8_Straight = 0;
-constexpr uint_fast8_t RGB565_LE = 1;
-constexpr uint_fast8_t RGB565_BE = 2;
-constexpr uint_fast8_t RGB332 = 3;
-constexpr uint_fast8_t RGB888 = 4;
-constexpr uint_fast8_t BGR888 = 5;
-constexpr uint_fast8_t Alpha8 = 6;
-constexpr uint_fast8_t Grayscale8 = 7;
-constexpr uint_fast8_t GrayscaleN =
-    7; // bit-packed Grayscale → Grayscale8 と共有
-constexpr uint_fast8_t Index8 = 8;
-constexpr uint_fast8_t IndexN = 8; // bit-packed Index → Index8 と共有
-constexpr uint_fast8_t Count = 9;
-} // namespace FormatIdx
+constexpr uint_fast8_t RGB565_LE      = 1;
+constexpr uint_fast8_t RGB565_BE      = 2;
+constexpr uint_fast8_t RGB332         = 3;
+constexpr uint_fast8_t RGB888         = 4;
+constexpr uint_fast8_t BGR888         = 5;
+constexpr uint_fast8_t Alpha8         = 6;
+constexpr uint_fast8_t Grayscale8     = 7;
+constexpr uint_fast8_t GrayscaleN     = 7;  // bit-packed Grayscale → Grayscale8 と共有
+constexpr uint_fast8_t Index8         = 8;
+constexpr uint_fast8_t IndexN         = 8;  // bit-packed Index → Index8 と共有
+constexpr uint_fast8_t Count          = 9;
+}  // namespace FormatIdx
 
 // ========================================================================
 // 操作タイプ
 // ========================================================================
 
 namespace OpType {
-constexpr uint_fast8_t ToStraight = 0;   // 各フォーマット → RGBA8_Straight
-constexpr uint_fast8_t FromStraight = 1; // RGBA8_Straight → 各フォーマット
-constexpr uint_fast8_t BlendUnder =
-    2; // 各フォーマット → Straight dst (under合成)
-constexpr uint_fast8_t Count = 3;
-} // namespace OpType
+constexpr uint_fast8_t ToStraight   = 0;  // 各フォーマット → RGBA8_Straight
+constexpr uint_fast8_t FromStraight = 1;  // RGBA8_Straight → 各フォーマット
+constexpr uint_fast8_t BlendUnder   = 2;  // 各フォーマット → Straight dst (under合成)
+constexpr uint_fast8_t Count        = 3;
+}  // namespace OpType
 
 // ========================================================================
 // メトリクス構造体
@@ -70,140 +68,167 @@ constexpr uint_fast8_t Count = 3;
 #ifdef FLEXIMG_DEBUG_PERF_METRICS
 
 struct FormatOpEntry {
-  uint32_t callCount = 0;  // 呼び出し回数
-  uint64_t pixelCount = 0; // 処理ピクセル数
+    uint32_t callCount  = 0;  // 呼び出し回数
+    uint64_t pixelCount = 0;  // 処理ピクセル数
 
-  void reset() {
-    callCount = 0;
-    pixelCount = 0;
-  }
+    void reset()
+    {
+        callCount  = 0;
+        pixelCount = 0;
+    }
 
-  void record(size_t pixels) {
-    callCount++;
-    pixelCount += static_cast<uint64_t>(pixels);
-  }
+    void record(size_t pixels)
+    {
+        callCount++;
+        pixelCount += static_cast<uint64_t>(pixels);
+    }
 };
 
 struct FormatMetrics {
-  FormatOpEntry data[FormatIdx::Count][OpType::Count];
+    FormatOpEntry data[FormatIdx::Count][OpType::Count];
 
-  // シングルトンインスタンス
-  static FormatMetrics &instance() {
-    static FormatMetrics s_instance;
-    return s_instance;
-  }
-
-  void reset() {
-    for (uint_fast8_t f = 0; f < FormatIdx::Count; ++f) {
-      for (uint_fast8_t o = 0; o < OpType::Count; ++o) {
-        data[f][o].reset();
-      }
+    // シングルトンインスタンス
+    static FormatMetrics &instance()
+    {
+        static FormatMetrics s_instance;
+        return s_instance;
     }
-  }
 
-  void record(uint_fast8_t formatIdx, uint_fast8_t opType, size_t pixels) {
-    if (formatIdx < FormatIdx::Count && opType < OpType::Count) {
-      data[formatIdx][opType].record(pixels);
+    void reset()
+    {
+        for (uint_fast8_t f = 0; f < FormatIdx::Count; ++f) {
+            for (uint_fast8_t o = 0; o < OpType::Count; ++o) {
+                data[f][o].reset();
+            }
+        }
     }
-  }
 
-  // 全フォーマットの合計（操作タイプ別）
-  FormatOpEntry totalByOp(uint_fast8_t opType) const {
-    FormatOpEntry total;
-    if (opType < OpType::Count) {
-      for (uint_fast8_t f = 0; f < FormatIdx::Count; ++f) {
-        total.callCount += data[f][opType].callCount;
-        total.pixelCount += data[f][opType].pixelCount;
-      }
+    void record(uint_fast8_t formatIdx, uint_fast8_t opType, size_t pixels)
+    {
+        if (formatIdx < FormatIdx::Count && opType < OpType::Count) {
+            data[formatIdx][opType].record(pixels);
+        }
     }
-    return total;
-  }
 
-  // 全操作の合計（フォーマット別）
-  FormatOpEntry totalByFormat(uint_fast8_t formatIdx) const {
-    FormatOpEntry total;
-    if (formatIdx < FormatIdx::Count) {
-      for (uint_fast8_t o = 0; o < OpType::Count; ++o) {
-        total.callCount += data[formatIdx][o].callCount;
-        total.pixelCount += data[formatIdx][o].pixelCount;
-      }
+    // 全フォーマットの合計（操作タイプ別）
+    FormatOpEntry totalByOp(uint_fast8_t opType) const
+    {
+        FormatOpEntry total;
+        if (opType < OpType::Count) {
+            for (uint_fast8_t f = 0; f < FormatIdx::Count; ++f) {
+                total.callCount += data[f][opType].callCount;
+                total.pixelCount += data[f][opType].pixelCount;
+            }
+        }
+        return total;
     }
-    return total;
-  }
 
-  // 全体合計
-  FormatOpEntry total() const {
-    FormatOpEntry t;
-    for (uint_fast8_t f = 0; f < FormatIdx::Count; ++f) {
-      for (uint_fast8_t o = 0; o < OpType::Count; ++o) {
-        t.callCount += data[f][o].callCount;
-        t.pixelCount += data[f][o].pixelCount;
-      }
+    // 全操作の合計（フォーマット別）
+    FormatOpEntry totalByFormat(uint_fast8_t formatIdx) const
+    {
+        FormatOpEntry total;
+        if (formatIdx < FormatIdx::Count) {
+            for (uint_fast8_t o = 0; o < OpType::Count; ++o) {
+                total.callCount += data[formatIdx][o].callCount;
+                total.pixelCount += data[formatIdx][o].pixelCount;
+            }
+        }
+        return total;
     }
-    return t;
-  }
 
-  // スナップショット（現在の状態を保存）
-  void
-  saveSnapshot(FormatOpEntry snapshot[FormatIdx::Count][OpType::Count]) const {
-    for (uint_fast8_t f = 0; f < FormatIdx::Count; ++f) {
-      for (uint_fast8_t o = 0; o < OpType::Count; ++o) {
-        snapshot[f][o] = data[f][o];
-      }
+    // 全体合計
+    FormatOpEntry total() const
+    {
+        FormatOpEntry t;
+        for (uint_fast8_t f = 0; f < FormatIdx::Count; ++f) {
+            for (uint_fast8_t o = 0; o < OpType::Count; ++o) {
+                t.callCount += data[f][o].callCount;
+                t.pixelCount += data[f][o].pixelCount;
+            }
+        }
+        return t;
     }
-  }
 
-  // スナップショットから復元
-  void restoreSnapshot(
-      const FormatOpEntry snapshot[FormatIdx::Count][OpType::Count]) {
-    for (uint_fast8_t f = 0; f < FormatIdx::Count; ++f) {
-      for (uint_fast8_t o = 0; o < OpType::Count; ++o) {
-        data[f][o] = snapshot[f][o];
-      }
+    // スナップショット（現在の状態を保存）
+    void saveSnapshot(FormatOpEntry snapshot[FormatIdx::Count][OpType::Count]) const
+    {
+        for (uint_fast8_t f = 0; f < FormatIdx::Count; ++f) {
+            for (uint_fast8_t o = 0; o < OpType::Count; ++o) {
+                snapshot[f][o] = data[f][o];
+            }
+        }
     }
-  }
+
+    // スナップショットから復元
+    void restoreSnapshot(const FormatOpEntry snapshot[FormatIdx::Count][OpType::Count])
+    {
+        for (uint_fast8_t f = 0; f < FormatIdx::Count; ++f) {
+            for (uint_fast8_t o = 0; o < OpType::Count; ++o) {
+                data[f][o] = snapshot[f][o];
+            }
+        }
+    }
 };
 
 // 計測マクロ
-#define FLEXIMG_FMT_METRICS(fmt, op, pixels)                                   \
-  ::FLEXIMG_NAMESPACE::core::FormatMetrics::instance().record(                 \
-      ::FLEXIMG_NAMESPACE::core::FormatIdx::fmt,                               \
-      ::FLEXIMG_NAMESPACE::core::OpType::op, pixels)
+#define FLEXIMG_FMT_METRICS(fmt, op, pixels)                                                               \
+    ::FLEXIMG_NAMESPACE::core::FormatMetrics::instance().record(::FLEXIMG_NAMESPACE::core::FormatIdx::fmt, \
+                                                                ::FLEXIMG_NAMESPACE::core::OpType::op, pixels)
 
 #else
 
 // リリースビルド用のダミー構造体
 struct FormatOpEntry {
-  void reset() {}
+    void reset()
+    {
+    }
 };
 
 struct FormatMetrics {
-  static FormatMetrics &instance() {
-    static FormatMetrics s_instance;
-    return s_instance;
-  }
-  void reset() {}
-  void record(uint_fast8_t, uint_fast8_t, size_t) {}
-  FormatOpEntry totalByOp(uint_fast8_t) const { return FormatOpEntry{}; }
-  FormatOpEntry totalByFormat(uint_fast8_t) const { return FormatOpEntry{}; }
-  FormatOpEntry total() const { return FormatOpEntry{}; }
-  void saveSnapshot(FormatOpEntry[FormatIdx::Count][OpType::Count]) const {}
-  void restoreSnapshot(const FormatOpEntry[FormatIdx::Count][OpType::Count]) {}
+    static FormatMetrics &instance()
+    {
+        static FormatMetrics s_instance;
+        return s_instance;
+    }
+    void reset()
+    {
+    }
+    void record(uint_fast8_t, uint_fast8_t, size_t)
+    {
+    }
+    FormatOpEntry totalByOp(uint_fast8_t) const
+    {
+        return FormatOpEntry{};
+    }
+    FormatOpEntry totalByFormat(uint_fast8_t) const
+    {
+        return FormatOpEntry{};
+    }
+    FormatOpEntry total() const
+    {
+        return FormatOpEntry{};
+    }
+    void saveSnapshot(FormatOpEntry[FormatIdx::Count][OpType::Count]) const
+    {
+    }
+    void restoreSnapshot(const FormatOpEntry[FormatIdx::Count][OpType::Count])
+    {
+    }
 };
 
 // リリースビルド用: メトリクス計測マクロは何もしない
 #define FLEXIMG_FMT_METRICS(fmt, op, pixels) ((void)0)
 
-#endif // FLEXIMG_DEBUG_PERF_METRICS
+#endif  // FLEXIMG_DEBUG_PERF_METRICS
 
-} // namespace core
+}  // namespace core
 
 // 親名前空間に公開
 namespace FormatIdx = core::FormatIdx;
-namespace OpType = core::OpType;
+namespace OpType    = core::OpType;
 using core::FormatMetrics;
 using core::FormatOpEntry;
 
-} // namespace FLEXIMG_NAMESPACE
+}  // namespace FLEXIMG_NAMESPACE
 
-#endif // FLEXIMG_FORMAT_METRICS_H
+#endif  // FLEXIMG_FORMAT_METRICS_H

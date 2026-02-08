@@ -13,8 +13,8 @@
 
 #include "types.h"
 
-#include <cstdio>  // printf
-#include <cstdlib> // std::abort
+#include <cstdio>   // printf
+#include <cstdlib>  // std::abort
 
 // ========================================================================
 // デバッグログマクロ
@@ -31,18 +31,18 @@
 //
 
 #ifdef ARDUINO
-#define FLEXIMG_DEBUG_LOG(fmt, ...)                                            \
-  do {                                                                         \
-    printf(fmt "\n", ##__VA_ARGS__);                                           \
-    fflush(stdout);                                                            \
-    vTaskDelay(1);                                                             \
-  } while (0)
+#define FLEXIMG_DEBUG_LOG(fmt, ...)      \
+    do {                                 \
+        printf(fmt "\n", ##__VA_ARGS__); \
+        fflush(stdout);                  \
+        vTaskDelay(1);                   \
+    } while (0)
 #else
-#define FLEXIMG_DEBUG_LOG(fmt, ...)                                            \
-  do {                                                                         \
-    printf(fmt "\n", ##__VA_ARGS__);                                           \
-    fflush(stdout);                                                            \
-  } while (0)
+#define FLEXIMG_DEBUG_LOG(fmt, ...)      \
+    do {                                 \
+        printf(fmt "\n", ##__VA_ARGS__); \
+        fflush(stdout);                  \
+    } while (0)
 #endif
 
 #ifdef FLEXIMG_DEBUG
@@ -60,24 +60,24 @@
 //
 
 #ifdef FLEXIMG_DEBUG
-#define FLEXIMG_ASSERT(cond, msg)                                              \
-  do {                                                                         \
-    if (!(cond)) {                                                             \
-      FLEXIMG_DEBUG_LOG("ASSERT FAIL: %s", msg);                               \
-      std::abort();                                                            \
-    }                                                                          \
-  } while (0)
+#define FLEXIMG_ASSERT(cond, msg)                      \
+    do {                                               \
+        if (!(cond)) {                                 \
+            FLEXIMG_DEBUG_LOG("ASSERT FAIL: %s", msg); \
+            std::abort();                              \
+        }                                              \
+    } while (0)
 #else
 #define FLEXIMG_ASSERT(cond, msg) ((void)0)
 #endif
 
-#define FLEXIMG_REQUIRE(cond, msg)                                             \
-  do {                                                                         \
-    if (!(cond)) {                                                             \
-      FLEXIMG_DEBUG_LOG("REQUIRE FAIL: %s", msg);                              \
-      std::abort();                                                            \
-    }                                                                          \
-  } while (0)
+#define FLEXIMG_REQUIRE(cond, msg)                      \
+    do {                                                \
+        if (!(cond)) {                                  \
+            FLEXIMG_DEBUG_LOG("REQUIRE FAIL: %s", msg); \
+            std::abort();                               \
+        }                                               \
+    } while (0)
 
 // ========================================================================
 // Deprecated attribute
@@ -94,4 +94,4 @@
 #define FLEXIMG_VERSION_MINOR 0
 #define FLEXIMG_VERSION_PATCH 0
 
-#endif // FLEXIMG_COMMON_H
+#endif  // FLEXIMG_COMMON_H

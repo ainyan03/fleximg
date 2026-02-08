@@ -41,48 +41,56 @@ namespace core {
 
 class DataRangeCache {
 public:
-  DataRangeCache() = default;
+    DataRangeCache() = default;
 
-  /// @brief キャッシュから取得を試みる
-  /// @param request リクエスト（キー）
-  /// @param out 取得結果の格納先
-  /// @return true=キャッシュヒット, false=キャッシュミス
-  bool tryGet(const RenderRequest &request, DataRange &out) const {
-    if (!valid_) {
-      return false;
+    /// @brief キャッシュから取得を試みる
+    /// @param request リクエスト（キー）
+    /// @param out 取得結果の格納先
+    /// @return true=キャッシュヒット, false=キャッシュミス
+    bool tryGet(const RenderRequest &request, DataRange &out) const
+    {
+        if (!valid_) {
+            return false;
+        }
+        if (cachedOrigin_.x != request.origin.x || cachedOrigin_.y != request.origin.y ||
+            cachedWidth_ != request.width) {
+            return false;
+        }
+        out = cachedRange_;
+        return true;
     }
-    if (cachedOrigin_.x != request.origin.x ||
-        cachedOrigin_.y != request.origin.y || cachedWidth_ != request.width) {
-      return false;
+
+    /// @brief キャッシュに設定
+    /// @param request リクエスト（キー）
+    /// @param range 範囲（値）
+    void set(const RenderRequest &request, const DataRange &range)
+    {
+        cachedOrigin_ = request.origin;
+        cachedWidth_  = request.width;
+        cachedRange_  = range;
+        valid_        = true;
     }
-    out = cachedRange_;
-    return true;
-  }
 
-  /// @brief キャッシュに設定
-  /// @param request リクエスト（キー）
-  /// @param range 範囲（値）
-  void set(const RenderRequest &request, const DataRange &range) {
-    cachedOrigin_ = request.origin;
-    cachedWidth_ = request.width;
-    cachedRange_ = range;
-    valid_ = true;
-  }
+    /// @brief キャッシュ無効化（Prepare時に呼び出し）
+    void invalidate()
+    {
+        valid_ = false;
+    }
 
-  /// @brief キャッシュ無効化（Prepare時に呼び出し）
-  void invalidate() { valid_ = false; }
-
-  /// @brief キャッシュが有効か問い合わせ（テスト/デバッグ用）
-  bool isValid() const { return valid_; }
+    /// @brief キャッシュが有効か問い合わせ（テスト/デバッグ用）
+    bool isValid() const
+    {
+        return valid_;
+    }
 
 private:
-  Point cachedOrigin_ = {0, 0};
-  int16_t cachedWidth_ = 0;
-  DataRange cachedRange_ = {0, 0};
-  bool valid_ = false;
+    Point cachedOrigin_    = {0, 0};
+    int16_t cachedWidth_   = 0;
+    DataRange cachedRange_ = {0, 0};
+    bool valid_            = false;
 };
 
-} // namespace core
-} // namespace FLEXIMG_NAMESPACE
+}  // namespace core
+}  // namespace FLEXIMG_NAMESPACE
 
-#endif // FLEXIMG_DATA_RANGE_CACHE_H
+#endif  // FLEXIMG_DATA_RANGE_CACHE_H

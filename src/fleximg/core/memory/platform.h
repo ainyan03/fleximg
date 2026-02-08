@@ -23,9 +23,9 @@ namespace memory {
 // ========================================================================
 
 enum class MemorySpeed {
-  Fast,   // 高速メモリ優先（SRAM）
-  Normal, // 通常メモリ（SRAM推奨だがPSRAMも可）
-  Slow,   // 低速メモリ可（PSRAM可、大容量優先）
+    Fast,    // 高速メモリ優先（SRAM）
+    Normal,  // 通常メモリ（SRAM推奨だがPSRAMも可）
+    Slow,    // 低速メモリ可（PSRAM可、大容量優先）
 };
 
 // ========================================================================
@@ -33,9 +33,9 @@ enum class MemorySpeed {
 // ========================================================================
 
 enum class MemoryFallback {
-  NoFallback, // フォールバックなし、失敗時はnullptrを返す
-  AllowPSRAM, // PSRAM使用を許可
-  AllowAny,   // 任意のメモリ使用を許可
+    NoFallback,  // フォールバックなし、失敗時はnullptrを返す
+    AllowPSRAM,  // PSRAM使用を許可
+    AllowAny,    // 任意のメモリ使用を許可
 };
 
 // ========================================================================
@@ -43,9 +43,9 @@ enum class MemoryFallback {
 // ========================================================================
 
 struct AllocateOptions {
-  MemorySpeed speed = MemorySpeed::Normal;
-  MemoryFallback fallback = MemoryFallback::AllowAny;
-  size_t alignment = 16; // デフォルト16バイトアライメント
+    MemorySpeed speed       = MemorySpeed::Normal;
+    MemoryFallback fallback = MemoryFallback::AllowAny;
+    size_t alignment        = 16;  // デフォルト16バイトアライメント
 };
 
 // ========================================================================
@@ -54,23 +54,23 @@ struct AllocateOptions {
 
 class IPlatformMemory {
 public:
-  virtual ~IPlatformMemory() = default;
+    virtual ~IPlatformMemory() = default;
 
-  /// @brief メモリを確保
-  /// @param size 確保するサイズ（バイト）
-  /// @param options 確保オプション
-  /// @return 確保したメモリへのポインタ（失敗時はnullptr）
-  virtual void *allocate(size_t size, const AllocateOptions &options) = 0;
+    /// @brief メモリを確保
+    /// @param size 確保するサイズ（バイト）
+    /// @param options 確保オプション
+    /// @return 確保したメモリへのポインタ（失敗時はnullptr）
+    virtual void *allocate(size_t size, const AllocateOptions &options) = 0;
 
-  /// @brief メモリを解放
-  /// @param ptr 解放するメモリのポインタ
-  virtual void deallocate(void *ptr) = 0;
+    /// @brief メモリを解放
+    /// @param ptr 解放するメモリのポインタ
+    virtual void deallocate(void *ptr) = 0;
 
-  /// @brief PSRAM が利用可能か
-  virtual bool hasPSRAM() const = 0;
+    /// @brief PSRAM が利用可能か
+    virtual bool hasPSRAM() const = 0;
 
-  /// @brief 指定したポインタがPSRAM上にあるか
-  virtual bool isPSRAM(void *ptr) const = 0;
+    /// @brief 指定したポインタがPSRAM上にあるか
+    virtual bool isPSRAM(void *ptr) const = 0;
 };
 
 // ========================================================================
@@ -89,20 +89,27 @@ void setPlatformMemory(IPlatformMemory *platformMemory);
 
 class DefaultPlatformMemory : public IPlatformMemory {
 public:
-  void *allocate(size_t size, const AllocateOptions &options) override;
-  void deallocate(void *ptr) override;
-  bool hasPSRAM() const override { return false; }
-  bool isPSRAM(void * /*ptr*/) const override { return false; }
+    void *allocate(size_t size, const AllocateOptions &options) override;
+    void deallocate(void *ptr) override;
+    bool hasPSRAM() const override
+    {
+        return false;
+    }
+    bool isPSRAM(void * /*ptr*/) const override
+    {
+        return false;
+    }
 
-  static DefaultPlatformMemory &instance() {
-    static DefaultPlatformMemory s_instance;
-    return s_instance;
-  }
+    static DefaultPlatformMemory &instance()
+    {
+        static DefaultPlatformMemory s_instance;
+        return s_instance;
+    }
 };
 
-} // namespace memory
-} // namespace core
-} // namespace FLEXIMG_NAMESPACE
+}  // namespace memory
+}  // namespace core
+}  // namespace FLEXIMG_NAMESPACE
 
 // =============================================================================
 // 実装部
@@ -118,31 +125,34 @@ namespace memory {
 // グローバルプラットフォームメモリインスタンス
 static IPlatformMemory *s_platformMemory = nullptr;
 
-IPlatformMemory &getPlatformMemory() {
-  if (!s_platformMemory) {
-    s_platformMemory = &DefaultPlatformMemory::instance();
-  }
-  return *s_platformMemory;
+IPlatformMemory &getPlatformMemory()
+{
+    if (!s_platformMemory) {
+        s_platformMemory = &DefaultPlatformMemory::instance();
+    }
+    return *s_platformMemory;
 }
 
-void setPlatformMemory(IPlatformMemory *platformMemory) {
-  s_platformMemory = platformMemory;
+void setPlatformMemory(IPlatformMemory *platformMemory)
+{
+    s_platformMemory = platformMemory;
 }
 
 // DefaultPlatformMemory の実装
-void *DefaultPlatformMemory::allocate(size_t size,
-                                      const AllocateOptions &options) {
-  return DefaultAllocator::instance().allocate(size, options.alignment);
+void *DefaultPlatformMemory::allocate(size_t size, const AllocateOptions &options)
+{
+    return DefaultAllocator::instance().allocate(size, options.alignment);
 }
 
-void DefaultPlatformMemory::deallocate(void *ptr) {
-  DefaultAllocator::instance().deallocate(ptr);
+void DefaultPlatformMemory::deallocate(void *ptr)
+{
+    DefaultAllocator::instance().deallocate(ptr);
 }
 
-} // namespace memory
-} // namespace core
-} // namespace FLEXIMG_NAMESPACE
+}  // namespace memory
+}  // namespace core
+}  // namespace FLEXIMG_NAMESPACE
 
-#endif // FLEXIMG_IMPLEMENTATION
+#endif  // FLEXIMG_IMPLEMENTATION
 
-#endif // FLEXIMG_CORE_MEMORY_PLATFORM_H
+#endif  // FLEXIMG_CORE_MEMORY_PLATFORM_H

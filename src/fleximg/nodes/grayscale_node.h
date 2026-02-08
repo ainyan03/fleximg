@@ -19,19 +19,26 @@ namespace FLEXIMG_NAMESPACE {
 
 class GrayscaleNode : public FilterNodeBase {
 public:
-  // ========================================
-  // Node インターフェース
-  // ========================================
+    // ========================================
+    // Node インターフェース
+    // ========================================
 
-  const char *name() const override { return "GrayscaleNode"; }
+    const char *name() const override
+    {
+        return "GrayscaleNode";
+    }
 
 protected:
-  filters::LineFilterFunc getFilterFunc() const override {
-    return &filters::grayscale_line;
-  }
-  int nodeTypeForMetrics() const override { return NodeType::Grayscale; }
+    filters::LineFilterFunc getFilterFunc() const override
+    {
+        return &filters::grayscale_line;
+    }
+    int nodeTypeForMetrics() const override
+    {
+        return NodeType::Grayscale;
+    }
 };
 
-} // namespace FLEXIMG_NAMESPACE
+}  // namespace FLEXIMG_NAMESPACE
 
-#endif // FLEXIMG_GRAYSCALE_NODE_H
+#endif  // FLEXIMG_GRAYSCALE_NODE_H

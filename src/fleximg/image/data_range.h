@@ -15,13 +15,19 @@ namespace FLEXIMG_NAMESPACE {
 //
 
 struct DataRange {
-  int16_t startX = 0; // 有効開始X（request座標系）
-  int16_t endX = 0;   // 有効終了X（request座標系）
+    int16_t startX = 0;  // 有効開始X（request座標系）
+    int16_t endX   = 0;  // 有効終了X（request座標系）
 
-  bool hasData() const { return startX < endX; }
-  int16_t width() const { return (startX < endX) ? (endX - startX) : 0; }
+    bool hasData() const
+    {
+        return startX < endX;
+    }
+    int16_t width() const
+    {
+        return (startX < endX) ? (endX - startX) : 0;
+    }
 };
 
-} // namespace FLEXIMG_NAMESPACE
+}  // namespace FLEXIMG_NAMESPACE
 
-#endif // FLEXIMG_DATA_RANGE_H
+#endif  // FLEXIMG_DATA_RANGE_H

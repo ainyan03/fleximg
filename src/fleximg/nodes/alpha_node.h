@@ -20,28 +20,44 @@ namespace FLEXIMG_NAMESPACE {
 
 class AlphaNode : public FilterNodeBase {
 public:
-  AlphaNode() { params_.value1 = 1.0f; } // デフォルト: 変化なし
+    AlphaNode()
+    {
+        params_.value1 = 1.0f;
+    }  // デフォルト: 変化なし
 
-  // ========================================
-  // パラメータ設定
-  // ========================================
+    // ========================================
+    // パラメータ設定
+    // ========================================
 
-  void setScale(float scale) { params_.value1 = scale; }
-  float scale() const { return params_.value1; }
+    void setScale(float scale)
+    {
+        params_.value1 = scale;
+    }
+    float scale() const
+    {
+        return params_.value1;
+    }
 
-  // ========================================
-  // Node インターフェース
-  // ========================================
+    // ========================================
+    // Node インターフェース
+    // ========================================
 
-  const char *name() const override { return "AlphaNode"; }
+    const char *name() const override
+    {
+        return "AlphaNode";
+    }
 
 protected:
-  filters::LineFilterFunc getFilterFunc() const override {
-    return &filters::alpha_line;
-  }
-  int nodeTypeForMetrics() const override { return NodeType::Alpha; }
+    filters::LineFilterFunc getFilterFunc() const override
+    {
+        return &filters::alpha_line;
+    }
+    int nodeTypeForMetrics() const override
+    {
+        return NodeType::Alpha;
+    }
 };
 
-} // namespace FLEXIMG_NAMESPACE
+}  // namespace FLEXIMG_NAMESPACE
 
-#endif // FLEXIMG_ALPHA_NODE_H
+#endif  // FLEXIMG_ALPHA_NODE_H
