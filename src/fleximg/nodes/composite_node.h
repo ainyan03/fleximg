@@ -2,6 +2,7 @@
 #define FLEXIMG_COMPOSITE_NODE_H
 
 #include "../core/affine_capability.h"
+#include "../core/data_range_cache.h"
 #include "../core/node.h"
 #include "../core/perf_metrics.h"
 #include "../image/image_buffer.h"
@@ -93,12 +94,7 @@ protected:
 
 private:
   // getDataRangeキャッシュ（同一スキャンラインでの重複計算を回避）
-  mutable struct {
-    Point origin = {0, 0};
-    int16_t width = 0;
-    DataRange range = {0, 0};
-    bool valid = false;
-  } dataRangeCache_;
+  mutable core::DataRangeCache dataRangeCache_;
 };
 
 } // namespace FLEXIMG_NAMESPACE
@@ -204,7 +200,7 @@ PrepareResponse CompositeNode::onPullPrepare(const PrepareRequest &request) {
   prepare(screenInfo);
 
   // getDataRangeキャッシュを無効化（アフィン行列が変わる可能性があるため）
-  dataRangeCache_.valid = false;
+  dataRangeCache_.invalidate();
 
   return merged;
 }
@@ -224,10 +220,9 @@ void CompositeNode::onPullFinalize() {
 // 同一スキャンラインでの重複呼び出しはキャッシュで高速化
 DataRange CompositeNode::getDataRange(const RenderRequest &request) const {
   // キャッシュヒットチェック
-  if (dataRangeCache_.valid && dataRangeCache_.origin.x == request.origin.x &&
-      dataRangeCache_.origin.y == request.origin.y &&
-      dataRangeCache_.width == request.width) {
-    return dataRangeCache_.range;
+  DataRange cached;
+  if (dataRangeCache_.tryGet(request, cached)) {
+    return cached;
   }
 
   auto numInputs = inputCount();
@@ -256,10 +251,7 @@ DataRange CompositeNode::getDataRange(const RenderRequest &request) const {
                                      : DataRange{0, 0};
 
   // キャッシュ更新
-  dataRangeCache_.origin = request.origin;
-  dataRangeCache_.width = request.width;
-  dataRangeCache_.range = result;
-  dataRangeCache_.valid = true;
+  dataRangeCache_.set(request, result);
 
   return result;
 }

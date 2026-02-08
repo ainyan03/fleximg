@@ -2,6 +2,7 @@
 #define FLEXIMG_SOURCE_NODE_H
 
 #include "../core/affine_capability.h"
+#include "../core/data_range_cache.h"
 #include "../core/node.h"
 #include "../core/perf_metrics.h"
 #include "../image/image_buffer.h"
@@ -162,12 +163,7 @@ private:
 
   // getDataRangeキャッシュ（同一スキャンラインでの重複計算を回避）
   // NinePatchSourceNode等から同一requestで複数回呼ばれるケースに対応
-  mutable struct {
-    Point origin = {0, 0};
-    int16_t width = 0;
-    DataRange range = {0, 0};
-    bool valid = false;
-  } dataRangeCache_;
+  mutable core::DataRangeCache dataRangeCache_;
 
   // スキャンライン有効範囲を計算（pullProcessWithAffineで使用）
   // 戻り値: true=有効範囲あり, false=有効範囲なし
@@ -198,7 +194,7 @@ PrepareResponse SourceNode::onPullPrepare(const PrepareRequest &request) {
   preferredFormat_ = request.preferredFormat;
 
   // getDataRangeキャッシュを無効化（アフィン行列が変わる可能性があるため）
-  dataRangeCache_.valid = false;
+  dataRangeCache_.invalidate();
 
   // Prepare時のoriginを保存（Process時の差分計算用）
   prepareOriginX_ = request.origin.x;
@@ -498,10 +494,9 @@ DataRange SourceNode::getDataRange(const RenderRequest &request) const {
   }
 
   // キャッシュヒットチェック（同一スキャンラインの重複呼び出し対応）
-  if (dataRangeCache_.valid && dataRangeCache_.origin.x == request.origin.x &&
-      dataRangeCache_.origin.y == request.origin.y &&
-      dataRangeCache_.width == request.width) {
-    return dataRangeCache_.range;
+  DataRange cached;
+  if (dataRangeCache_.tryGet(request, cached)) {
+    return cached;
   }
 
   // calcScanlineRangeで正確な有効範囲を計算
@@ -515,10 +510,7 @@ DataRange SourceNode::getDataRange(const RenderRequest &request) const {
   }
 
   // キャッシュ更新
-  dataRangeCache_.origin = request.origin;
-  dataRangeCache_.width = request.width;
-  dataRangeCache_.range = result;
-  dataRangeCache_.valid = true;
+  dataRangeCache_.set(request, result);
 
   return result;
 }
