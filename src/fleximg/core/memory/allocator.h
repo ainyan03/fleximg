@@ -27,20 +27,20 @@ namespace memory {
 
 class IAllocator {
 public:
-  virtual ~IAllocator() = default;
+    virtual ~IAllocator() = default;
 
-  /// @brief メモリを確保
-  /// @param bytes 確保するサイズ（バイト）
-  /// @param alignment アライメント（デフォルト16バイト）
-  /// @return 確保したメモリへのポインタ（失敗時はnullptr）
-  virtual void *allocate(size_t bytes, size_t alignment = 16) = 0;
+    /// @brief メモリを確保
+    /// @param bytes 確保するサイズ（バイト）
+    /// @param alignment アライメント（デフォルト16バイト）
+    /// @return 確保したメモリへのポインタ（失敗時はnullptr）
+    virtual void *allocate(size_t bytes, size_t alignment = 16) = 0;
 
-  /// @brief メモリを解放
-  /// @param ptr 解放するメモリのポインタ
-  virtual void deallocate(void *ptr) = 0;
+    /// @brief メモリを解放
+    /// @param ptr 解放するメモリのポインタ
+    virtual void deallocate(void *ptr) = 0;
 
-  /// @brief アロケータ名を取得（デバッグ用）
-  virtual const char *name() const = 0;
+    /// @brief アロケータ名を取得（デバッグ用）
+    virtual const char *name() const = 0;
 };
 
 // ========================================================================
@@ -50,58 +50,62 @@ public:
 class DefaultAllocator : public IAllocator {
 public:
 #ifdef FLEXIMG_TRAP_DEFAULT_ALLOCATOR
-  // デバッグ用: トラップ有効フラグ
-  static bool &trapEnabled() {
-    static bool enabled = false;
-    return enabled;
-  }
+    // デバッグ用: トラップ有効フラグ
+    static bool &trapEnabled()
+    {
+        static bool enabled = false;
+        return enabled;
+    }
 #endif
 
-  void *allocate(size_t bytes, size_t alignment = 16) override {
+    void *allocate(size_t bytes, size_t alignment = 16) override
+    {
 #ifdef FLEXIMG_TRAP_DEFAULT_ALLOCATOR
-    // デバッグ用: トラップ有効時にDefaultAllocatorが使われたら停止
-    if (trapEnabled()) {
-      assert(
-          false &&
-          "DefaultAllocator::allocate() called - use backtrace to find caller");
-    }
+        // デバッグ用: トラップ有効時にDefaultAllocatorが使われたら停止
+        if (trapEnabled()) {
+            assert(false && "DefaultAllocator::allocate() called - use backtrace to find caller");
+        }
 #endif
 #ifdef _WIN32
-    return _aligned_malloc(bytes, alignment);
+        return _aligned_malloc(bytes, alignment);
 #else
-    void *ptr = nullptr;
-    // posix_memalignはalignmentがsizeof(void*)の倍数である必要がある
-    if (alignment < sizeof(void *)) {
-      alignment = sizeof(void *);
-    }
-    if (posix_memalign(&ptr, alignment, bytes) != 0) {
-      return nullptr;
-    }
-    return ptr;
+        void *ptr = nullptr;
+        // posix_memalignはalignmentがsizeof(void*)の倍数である必要がある
+        if (alignment < sizeof(void *)) {
+            alignment = sizeof(void *);
+        }
+        if (posix_memalign(&ptr, alignment, bytes) != 0) {
+            return nullptr;
+        }
+        return ptr;
 #endif
-  }
+    }
 
-  void deallocate(void *ptr) override {
-    if (!ptr)
-      return;
+    void deallocate(void *ptr) override
+    {
+        if (!ptr) return;
 #ifdef _WIN32
-    _aligned_free(ptr);
+        _aligned_free(ptr);
 #else
-    free(ptr);
+        free(ptr);
 #endif
-  }
+    }
 
-  const char *name() const override { return "DefaultAllocator"; }
+    const char *name() const override
+    {
+        return "DefaultAllocator";
+    }
 
-  /// @brief シングルトンインスタンス取得
-  static DefaultAllocator &instance() {
-    static DefaultAllocator s_instance;
-    return s_instance;
-  }
+    /// @brief シングルトンインスタンス取得
+    static DefaultAllocator &instance()
+    {
+        static DefaultAllocator s_instance;
+        return s_instance;
+    }
 };
 
-} // namespace memory
-} // namespace core
-} // namespace FLEXIMG_NAMESPACE
+}  // namespace memory
+}  // namespace core
+}  // namespace FLEXIMG_NAMESPACE
 
-#endif // FLEXIMG_CORE_MEMORY_ALLOCATOR_H
+#endif  // FLEXIMG_CORE_MEMORY_ALLOCATOR_H
