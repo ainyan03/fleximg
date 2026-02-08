@@ -40,7 +40,7 @@ class DistributorNode : public Node, public AffineCapability {
 public:
     explicit DistributorNode(int outputCount = 1)
     {
-        initPorts(1, outputCount);  // 入力1、出力N
+        initPorts(1, static_cast<int_fast16_t>(outputCount));  // 入力1、出力N
     }
 
     // ========================================

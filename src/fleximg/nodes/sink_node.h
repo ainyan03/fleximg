@@ -275,7 +275,7 @@ void SinkNode::onPushProcess(RenderResponse &input, const RenderRequest &request
         for (int_fast32_t y = 0; y < copyH; ++y) {
             const void *srcRow = inputView.pixelAt(srcX, srcY + static_cast<int>(y));
             void *dstRow       = target_.pixelAt(dstX, dstY + static_cast<int>(y));
-            converter(dstRow, srcRow, static_cast<int>(copyW));
+            converter(dstRow, srcRow, static_cast<size_t>(copyW));
         }
     }
 }
