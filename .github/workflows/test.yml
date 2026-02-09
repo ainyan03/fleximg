@@ -12,11 +12,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check clang-format
+      - name: Check clang-format (src)
         uses: jidicula/clang-format-action@v4.14.0
         with:
           clang-format-version: '21'
           check-path: 'src'
+
+      - name: Check clang-format (impl)
+        uses: jidicula/clang-format-action@v4.14.0
+        with:
+          clang-format-version: '21'
+          check-path: 'impl'
 
   test:
     runs-on: ubuntu-latest
