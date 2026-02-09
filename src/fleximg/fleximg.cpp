@@ -50,6 +50,9 @@
 #include "../../impl/fleximg/core/memory/pool_allocator.inl"
 #include "../../impl/fleximg/core/node.inl"
 
+// Image (pixel_format)
+#include "../../impl/fleximg/image/pixel_format.inl"
+
 // Image
 #include "../../impl/fleximg/image/viewport.inl"
 
