@@ -393,66 +393,47 @@ namespace canvas_utils {
 
 ## ビルド方式
 
-### stb-style（Implementation Macro パターン）
+### 宣言/実装分離パターン
 
-fleximg は [stb ライブラリ](https://github.com/nothings/stb) と同様の実装マクロパターンを採用しています。
-これにより、コンパイル単位を最小化し、Arduino IDE などでのビルド時間を短縮します。
+fleximg は宣言（`.h`）と実装（`.inl`）を物理的に分離しています。
+`src/fleximg/` に公開ヘッダ（宣言のみ）、`impl/fleximg/` に実装ファイルを配置し、
+単一コンパイル単位 `fleximg.cpp` から両方をインクルードします。
 
-**使用方法:**
+この構造により：
+- Arduino IDE 等で `src/` 配下のヘッダを安全にインクルード可能
+- 実装の重複コンパイルを防止
+- コンパイル単位を最小化し、ビルド時間を短縮
+
+**使用方法（ユーザー側）:**
 
 ```cpp
-// 1つのソースファイルでのみ FLEXIMG_IMPLEMENTATION を定義
+// ヘッダのインクルードのみ（実装は fleximg.cpp に含まれる）
 #define FLEXIMG_NAMESPACE fleximg
-#define FLEXIMG_IMPLEMENTATION
-#include "fleximg/core/memory/platform.h"
-#include "fleximg/core/memory/pool_allocator.h"
 #include "fleximg/image/pixel_format.h"
-#include "fleximg/image/viewport.h"
-#include "fleximg/operations/filters.h"
-// ... 使用するヘッダをインクルード
-
-// 他のソースファイルでは FLEXIMG_IMPLEMENTATION を定義しない
-#define FLEXIMG_NAMESPACE fleximg
-#include "fleximg/image/pixel_format.h"  // 宣言のみ使用
+#include "fleximg/nodes/source_node.h"
+// ...
 ```
 
-**WASM/テストビルド:**
-`src/fleximg/fleximg.cpp` が唯一のコンパイル単位として全実装を含みます。
-
-**実装分離の方針:**
-
-各ヘッダファイルは以下の構造を持ちます：
+**コンパイル単位:**
+`src/fleximg/fleximg.cpp` が唯一のコンパイル単位として、宣言ヘッダと `.inl` 実装ファイルの両方をインクルードします。
 
 ```cpp
-#ifndef FLEXIMG_XXX_H
-#define FLEXIMG_XXX_H
+// 宣言ヘッダ（src/fleximg/ 内）
+#include "core/node.h"
+#include "image/pixel_format.h"
+// ...
 
-// クラス宣言（ヘッダ部）
-// - コンストラクタ、デストラクタ
-// - 短いアクセサ（1-2行）
-// - 短いpublicメソッド
-
-#ifdef FLEXIMG_IMPLEMENTATION
-// 実装部
-// - 仮想オーバーライドメソッド（vtable linkage問題の回避）
-// - privateヘルパーメソッド
-// - 複雑なロジック
-#endif
-
-#endif
+// 実装ファイル（impl/fleximg/ 内）
+#include "../../impl/fleximg/core/node.inl"
+#include "../../impl/fleximg/image/pixel_format.inl"
+// ...
 ```
-
-**実装を含むファイル一覧:**
-- `core/node.h`, `core/memory/platform.h`, `core/memory/pool_allocator.h`
-- `image/pixel_format.h`, `image/viewport.h`
-- `operations/filters.h`
-- 全ノードファイル（`nodes/*.h`）
 
 ## ファイル構成
 
 ```
-src/fleximg/
-├── fleximg.cpp               # メインコンパイル単位（stb-style）
+src/fleximg/                  # 公開ヘッダ（宣言のみ）
+├── fleximg.cpp               # メインコンパイル単位
 │
 ├── core/                     # コア機能（fleximg::core 名前空間）
 │   ├── common.h              # NAMESPACE定義、バージョン
@@ -471,19 +452,19 @@ src/fleximg/
 │
 ├── image/                    # 画像処理
 │   ├── pixel_format.h        # ピクセルフォーマット共通定義・ユーティリティ
-│   ├── pixel_format/         # 各フォーマットの個別実装
+│   ├── pixel_format/         # 各フォーマットの個別宣言
 │   │   ├── rgba8_straight.h  # RGBA8_Straight
 │   │   ├── alpha8.h          # Alpha8
 │   │   ├── rgb565.h          # RGB565_LE/BE + ルックアップテーブル + swap16
 │   │   ├── rgb332.h          # RGB332 + ルックアップテーブル
 │   │   ├── rgb888.h          # RGB888/BGR888 + swap24
-│   │   ├── grayscale8.h      # Grayscale8（BT.601輝度）
-│   │   └── index8.h          # Index8（パレットインデックス）
+│   │   ├── grayscale.h       # Grayscale（BT.601輝度）
+│   │   └── index.h           # Index（パレットインデックス）
 │   ├── viewport.h            # ViewPort
 │   ├── image_buffer.h        # ImageBuffer
 │   └── render_types.h        # RenderRequest, RenderResponse
 │
-├── nodes/
+├── nodes/                    # ノード宣言
 │   ├── source_node.h         # SourceNode
 │   ├── ninepatch_source_node.h # NinePatchSourceNode（9パッチ画像）
 │   ├── sink_node.h           # SinkNode
@@ -503,6 +484,40 @@ src/fleximg/
     ├── transform.h           # アフィン変換（DDA処理）
     ├── filters.h             # フィルタ処理
     └── canvas_utils.h        # キャンバス操作（合成ユーティリティ）
+
+impl/fleximg/                 # 実装ファイル（.inl、非公開）
+├── core/
+│   ├── node.inl
+│   └── memory/
+│       ├── platform.inl
+│       └── pool_allocator.inl
+├── image/
+│   ├── pixel_format.inl      # 集約ファイル（サブフォーマット .inl をインクルード）
+│   ├── pixel_format/
+│   │   ├── alpha8.inl
+│   │   ├── grayscale.inl
+│   │   ├── index.inl
+│   │   ├── rgb332.inl
+│   │   ├── rgb565.inl
+│   │   ├── rgb888.inl
+│   │   ├── rgba8_straight.inl
+│   │   ├── dda.inl
+│   │   └── format_converter.inl
+│   └── viewport.inl
+├── operations/
+│   └── filters.inl
+└── nodes/
+    ├── affine_node.inl
+    ├── composite_node.inl
+    ├── distributor_node.inl
+    ├── filter_node_base.inl
+    ├── horizontal_blur_node.inl
+    ├── matte_node.inl
+    ├── ninepatch_source_node.inl
+    ├── renderer_node.inl
+    ├── sink_node.inl
+    ├── source_node.inl
+    └── vertical_blur_node.inl
 ```
 
 ## 使用例
@@ -510,16 +525,10 @@ src/fleximg/
 ### 基本的なパイプライン
 
 ```cpp
-// stb-style: 実装を有効化
 #define FLEXIMG_NAMESPACE fleximg
-#define FLEXIMG_IMPLEMENTATION
-#include "fleximg/core/common.h"
-#include "fleximg/core/memory/platform.h"
-#include "fleximg/core/memory/pool_allocator.h"
 #include "fleximg/image/pixel_format.h"
 #include "fleximg/image/viewport.h"
 #include "fleximg/image/image_buffer.h"
-#include "fleximg/operations/filters.h"
 #include "fleximg/nodes/source_node.h"
 #include "fleximg/nodes/sink_node.h"
 #include "fleximg/nodes/affine_node.h"

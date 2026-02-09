@@ -249,7 +249,7 @@ namespace pixel_format {
 namespace detail {
 
 // BytesPerPixel別 DDA転写関数（前方宣言）
-// 実装は dda.h で提供（FLEXIMG_IMPLEMENTATION部）
+// 実装は impl/fleximg/image/pixel_format/dda.inl で提供
 void copyRowDDA_1Byte(uint8_t *dst, const uint8_t *srcData, int_fast16_t count, const DDAParam *param);
 void copyRowDDA_2Byte(uint8_t *dst, const uint8_t *srcData, int_fast16_t count, const DDAParam *param);
 void copyRowDDA_3Byte(uint8_t *dst, const uint8_t *srcData, int_fast16_t count, const DDAParam *param);
@@ -262,7 +262,7 @@ void copyQuadDDA_3Byte(uint8_t *dst, const uint8_t *srcData, int_fast16_t count,
 void copyQuadDDA_4Byte(uint8_t *dst, const uint8_t *srcData, int_fast16_t count, const DDAParam *param);
 
 // BitsPerPixel別 bit-packed DDA転写関数（前方宣言）
-// 実装は dda.h で提供（bit_packed_index.h インクルード後）
+// 実装は impl/fleximg/image/pixel_format/dda.inl で提供
 template <int BitsPerPixel, BitOrder Order>
 void copyRowDDA_Bit(uint8_t *dst, const uint8_t *srcData, int_fast16_t count, const DDAParam *param);
 

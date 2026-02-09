@@ -3,13 +3,9 @@
  * @brief fleximg ライブラリ実装のコンパイル単位
  *
  * このファイルは fleximg ライブラリの唯一のコンパイル単位です。
- * FLEXIMG_IMPLEMENTATION を定義してから各ヘッダをincludeすることで、
- * 実装部がここでのみコンパイルされます。
- *
- * stb ライブラリ方式（Implementation Macro パターン）を採用しています。
+ * 宣言ヘッダ（src/fleximg/）と実装ファイル（impl/fleximg/）を
+ * インクルードし、単一コンパイル単位として全体をビルドします。
  */
-
-#define FLEXIMG_IMPLEMENTATION
 
 // =============================================================================
 // 宣言ヘッダ
@@ -50,10 +46,8 @@
 #include "../../impl/fleximg/core/memory/pool_allocator.inl"
 #include "../../impl/fleximg/core/node.inl"
 
-// Image (pixel_format)
-#include "../../impl/fleximg/image/pixel_format.inl"
-
 // Image
+#include "../../impl/fleximg/image/pixel_format.inl"
 #include "../../impl/fleximg/image/viewport.inl"
 
 // Operations
