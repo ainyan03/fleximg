@@ -334,7 +334,7 @@ RenderResponse &SourceNode::pullProcessWithAffine(const RenderRequest &request)
     Point adjustedOrigin = {request.origin.x + to_fixed(dxStart), request.origin.y};
 
     // 空のResponseを取得し、バッファを直接作成（ムーブなし）
-    int validWidth       = dxEnd - dxStart + 1;
+    int_fast16_t validWidth = static_cast<int_fast16_t>(dxEnd - dxStart + 1);
     RenderResponse &resp = makeEmptyResponse(adjustedOrigin);
     // 出力フォーマット決定:
     // - 1chバイリニア対応フォーマット（Alpha8等）: ソースフォーマット直接出力

@@ -15,7 +15,7 @@ RenderResponse &FilterNodeBase::onPullProcess(const RenderRequest &request)
     Node *upstream = upstreamNode(0);
     if (!upstream) return makeEmptyResponse(request.origin);
 
-    int margin             = computeInputMargin();
+    int_fast16_t margin    = static_cast<int_fast16_t>(computeInputMargin());
     RenderRequest inputReq = request.expand(margin);
 
 #ifdef FLEXIMG_DEBUG_PERF_METRICS
