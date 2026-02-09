@@ -49,3 +49,9 @@
 #include "../../impl/fleximg/core/memory/platform.inl"
 #include "../../impl/fleximg/core/memory/pool_allocator.inl"
 #include "../../impl/fleximg/core/node.inl"
+
+// Image
+#include "../../impl/fleximg/image/viewport.inl"
+
+// Operations
+#include "../../impl/fleximg/operations/filters.inl"
