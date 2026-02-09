@@ -13,6 +13,7 @@
 #include <cstdint>
 
 #include "../common.h"
+#include "../perf_metrics.h"  // FLEXIMG_DEBUG_PERF_METRICS マクロ
 #include "allocator.h"
 
 namespace FLEXIMG_NAMESPACE {
