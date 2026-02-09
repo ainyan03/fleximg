@@ -1,0 +1,432 @@
+/**
+ * @file source_node.inl
+ * @brief SourceNode 実装
+ * @see src/fleximg/nodes/source_node.h
+ */
+
+namespace FLEXIMG_NAMESPACE {
+
+// ============================================================================
+// SourceNode - Template Method フック実装
+// ============================================================================
+
+PrepareResponse SourceNode::onPullPrepare(const PrepareRequest &request)
+{
+    // 下流からの希望フォーマットを保存（将来のフォーマット最適化用）
+    preferredFormat_ = request.preferredFormat;
+
+    // getDataRangeキャッシュを無効化（アフィン行列が変わる可能性があるため）
+    dataRangeCache_.invalidate();
+
+    // Prepare時のoriginを保存（Process時の差分計算用）
+    prepareOriginX_ = request.origin.x;
+    prepareOriginY_ = request.origin.y;
+
+    // 常に合成行列を計算し、アフィン事前計算を実行
+    // request.affineMatrix経由の平行移動も含めて一貫した座標計算を行う
+    AffineMatrix combinedMatrix;
+    if (request.hasAffine) {
+        combinedMatrix = request.affineMatrix * localMatrix_;
+    } else {
+        combinedMatrix = localMatrix_;  // 無変換時は単位行列
+    }
+
+    // 逆行列とピクセル中心オフセットを計算
+    affine_ = precomputeInverseAffine(combinedMatrix);
+
+    if (affine_.isValid()) {
+        const int32_t invA = affine_.invMatrix.a;
+        const int32_t invB = affine_.invMatrix.b;
+        const int32_t invC = affine_.invMatrix.c;
+        const int32_t invD = affine_.invMatrix.d;
+
+        // pivot は既に Q16.16 なのでそのまま使用
+        const int32_t srcPivotXFixed16 = pivotX_;
+        const int32_t srcPivotYFixed16 = pivotY_;
+
+        // prepareOrigin を逆行列で変換（Prepare時に1回だけ計算）
+        // Q16.16 × Q16.16 = Q32.32、右シフトで Q16.16 に戻す
+        const int32_t prepareOffsetX = static_cast<int32_t>(
+            (static_cast<int64_t>(prepareOriginX_) * invA + static_cast<int64_t>(prepareOriginY_) * invB) >>
+            INT_FIXED_SHIFT);
+        const int32_t prepareOffsetY = static_cast<int32_t>(
+            (static_cast<int64_t>(prepareOriginX_) * invC + static_cast<int64_t>(prepareOriginY_) * invD) >>
+            INT_FIXED_SHIFT);
+
+        // バイリニア補間かどうかで有効範囲とオフセットが異なる
+        // copyQuadDDA対応フォーマットならバイリニア可能（出力はRGBA8_Straight）
+        const bool useBilinear =
+            (interpolationMode_ == InterpolationMode::Bilinear) && source_.formatID && source_.formatID->copyQuadDDA;
+
+        if (useBilinear) {
+            // バイリニア: 有効範囲はNearest同様 srcSize
+            // 境界外ピクセルは copyQuadDDA の edgeFlags で透明として補間
+            fpWidth_  = source_.width << INT_FIXED_SHIFT;
+            fpHeight_ = source_.height << INT_FIXED_SHIFT;
+
+            // バイリニア: edgeFadeFlagsに応じて各辺の範囲を拡張
+            // フェード有効な辺のみ halfPixel 分拡張（フェードアウト領域用）
+            // invA/invCの符号によって、どの辺がstart/endに対応するか変わる
+            constexpr int_fixed halfPixel = 1 << (INT_FIXED_SHIFT - 1);
+
+            // X方向のフェード拡張
+            int32_t hpAStart = 0, hpAEnd = 0;
+            if (invA >= 0) {
+                // 非反転: xs1_はLeft側、xs2_はRight側
+                if (edgeFadeFlags_ & EdgeFade_Left) hpAStart = halfPixel;
+                if (edgeFadeFlags_ & EdgeFade_Right) hpAEnd = halfPixel;
+            } else {
+                // 反転: xs1_はRight側、xs2_はLeft側
+                if (edgeFadeFlags_ & EdgeFade_Right) hpAStart = -halfPixel;
+                if (edgeFadeFlags_ & EdgeFade_Left) hpAEnd = -halfPixel;
+            }
+
+            // Y方向のフェード拡張
+            int32_t hpCStart = 0, hpCEnd = 0;
+            if (invC >= 0) {
+                // 非反転: ys1_はTop側、ys2_はBottom側
+                if (edgeFadeFlags_ & EdgeFade_Top) hpCStart = halfPixel;
+                if (edgeFadeFlags_ & EdgeFade_Bottom) hpCEnd = halfPixel;
+            } else {
+                // 反転: ys1_はBottom側、ys2_はTop側
+                if (edgeFadeFlags_ & EdgeFade_Bottom) hpCStart = -halfPixel;
+                if (edgeFadeFlags_ & EdgeFade_Top) hpCEnd = -halfPixel;
+            }
+
+            xs1_ = invA + (invA < 0 ? fpWidth_ : -1) - hpAStart;
+            xs2_ = invA + (invA < 0 ? 0 : (fpWidth_ - 1)) + hpAEnd;
+            ys1_ = invC + (invC < 0 ? fpHeight_ : -1) - hpCStart;
+            ys2_ = invC + (invC < 0 ? 0 : (fpHeight_ - 1)) + hpCEnd;
+
+            useBilinear_ = true;
+        } else {
+            // 最近傍: pivot の小数部を保持
+            fpWidth_  = source_.width << INT_FIXED_SHIFT;
+            fpHeight_ = source_.height << INT_FIXED_SHIFT;
+
+            xs1_ = invA + (invA < 0 ? fpWidth_ : -1);
+            xs2_ = invA + (invA < 0 ? 0 : (fpWidth_ - 1));
+            ys1_ = invC + (invC < 0 ? fpHeight_ : -1);
+            ys2_ = invC + (invC < 0 ? 0 : (fpHeight_ - 1));
+
+            useBilinear_ = false;
+        }
+
+        // baseTx/Ty は バイリニア・最近傍共通の計算式
+        baseTxWithOffsets_ =
+            affine_.invTxFixed + srcPivotXFixed16 + affine_.rowOffsetX + affine_.dxOffsetX + prepareOffsetX;
+        baseTyWithOffsets_ =
+            affine_.invTyFixed + srcPivotYFixed16 + affine_.rowOffsetY + affine_.dxOffsetY + prepareOffsetY;
+
+        // DDA増分に基づく最適化判定
+        // 等倍表示相当（逆行列2x2部分が単位行列）かつ最近傍の場合、
+        // DDA をスキップし、高速な非アフィンパス（subView参照）を使用
+        // バイリニア補間時はedgeFade等の処理にDDAが必要なためスキップしない
+        constexpr int_fixed one = 1 << INT_FIXED_SHIFT;
+        bool isTranslationOnly  = !useBilinear_ && invA == one && invD == one && invB == 0 && invC == 0;
+
+        hasAffine_ = !isTranslationOnly;
+    } else {
+        // 逆行列が無効（特異行列）
+        hasAffine_ = true;
+    }
+
+    // SourceNodeは終端なので上流への伝播なし
+    // 出力側で必要なAABBを計算（常にcalcAffineAABBを使用）
+    PrepareResponse result;
+    result.status          = PrepareStatus::Prepared;
+    result.preferredFormat = source_.formatID;
+
+    // バイリニア補間のフェード領域分を考慮した入力矩形
+    // フェード有効な辺は0.5ピクセル拡張される
+    float aabbWidth      = static_cast<float>(source_.width);
+    float aabbHeight     = static_cast<float>(source_.height);
+    int_fixed aabbPivotX = pivotX_;
+    int_fixed aabbPivotY = pivotY_;
+    if (useBilinear_) {
+        constexpr float half          = 0.5f;
+        constexpr int_fixed halfFixed = 1 << (INT_FIXED_SHIFT - 1);
+        if (edgeFadeFlags_ & EdgeFade_Left) {
+            aabbWidth += half;
+            aabbPivotX += halfFixed;
+        }
+        if (edgeFadeFlags_ & EdgeFade_Right) {
+            aabbWidth += half;
+        }
+        if (edgeFadeFlags_ & EdgeFade_Top) {
+            aabbHeight += half;
+            aabbPivotY += halfFixed;
+        }
+        if (edgeFadeFlags_ & EdgeFade_Bottom) {
+            aabbHeight += half;
+        }
+    }
+
+    calcAffineAABB(aabbWidth, aabbHeight, {aabbPivotX, aabbPivotY}, combinedMatrix, result.width, result.height,
+                   result.origin);
+
+    return result;
+}
+
+RenderResponse &SourceNode::onPullProcess(const RenderRequest &request)
+{
+    FLEXIMG_METRICS_SCOPE(NodeType::Source);
+
+    if (!source_.isValid()) {
+        return makeEmptyResponse(request.origin);
+    }
+
+    // アフィン変換が伝播されている場合はDDA処理
+    if (hasAffine_) {
+        return pullProcessWithAffine(request);
+    }
+
+    // アフィン事前計算値から座標を導出（DDAパスと同一の情報源）
+    // baseTxWithOffsets_ はPrepare時に合成行列から計算済みで、
+    // request.affineMatrix経由の平行移動も含まれている
+    const int32_t deltaX = from_fixed(request.origin.x - prepareOriginX_);
+    const int32_t deltaY = from_fixed(request.origin.y - prepareOriginY_);
+    const int32_t baseX  = baseTxWithOffsets_ + deltaX * affine_.invMatrix.a + deltaY * affine_.invMatrix.b;
+    const int32_t baseY  = baseTyWithOffsets_ + deltaX * affine_.invMatrix.c + deltaY * affine_.invMatrix.d;
+
+    // srcBase: 出力dx=0に対応するソースピクセルインデックス
+    int32_t srcBaseX = from_fixed_floor(baseX);
+    int32_t srcBaseY = from_fixed_floor(baseY);
+
+    // 有効範囲: srcBase + dx が [0, srcSize) に収まる dx の範囲
+    // srcBase + dxStart >= 0  →  dxStart >= -srcBaseX
+    // srcBase + dxEnd < srcSize  →  dxEnd < srcSize - srcBaseX
+    auto dxStartX = std::max<int32_t>(0, -srcBaseX);
+    auto dxEndX   = std::min<int32_t>(request.width, source_.width - srcBaseX);
+    auto dxStartY = std::max<int32_t>(0, -srcBaseY);
+    auto dxEndY   = std::min<int32_t>(request.height, source_.height - srcBaseY);
+
+    if (dxStartX >= dxEndX || dxStartY >= dxEndY) {
+        return makeEmptyResponse(request.origin);
+    }
+
+    int32_t validW = dxEndX - dxStartX;
+    int32_t validH = dxEndY - dxStartY;
+
+    // サブビューの参照モードImageBufferを作成（メモリ確保なし）
+    auto srcX = static_cast<int_fast16_t>(srcBaseX + dxStartX);
+    auto srcY = static_cast<int_fast16_t>(srcBaseY + dxStartY);
+    ImageBuffer result(
+        view_ops::subView(source_, srcX, srcY, static_cast<int_fast16_t>(validW), static_cast<int_fast16_t>(validH)));
+    // パレット情報を出力ImageBufferに設定
+    if (palette_) {
+        result.setPalette(palette_);
+    }
+    // カラーキー情報を出力ImageBufferに設定
+    if (colorKeyRGBA8_ != colorKeyReplace_) {
+        result.auxInfo().colorKeyRGBA8   = colorKeyRGBA8_;
+        result.auxInfo().colorKeyReplace = colorKeyReplace_;
+    }
+
+    // origin = リクエストグリッドに整列（アフィンパスと同形式）
+    Point adjustedOrigin = {request.origin.x + to_fixed(dxStartX), request.origin.y + to_fixed(dxStartY)};
+    return makeResponse(std::move(result), adjustedOrigin);
+}
+
+// ============================================================================
+// SourceNode - private ヘルパーメソッド実装
+// ============================================================================
+
+// スキャンライン有効範囲を計算（getDataRange/pullProcessWithAffineで共用）
+// 戻り値: true=有効範囲あり, false=有効範囲なし
+bool SourceNode::calcScanlineRange(const RenderRequest &request, int32_t &dxStart, int32_t &dxEnd, int32_t *outBaseX,
+                                   int32_t *outBaseY) const
+{
+    // 特異行列チェック
+    if (!affine_.isValid()) {
+        return false;
+    }
+
+    // LovyanGFX/pixel_image.hpp 方式: 事前計算済み境界値を使った範囲計算
+    const int32_t invA = affine_.invMatrix.a;
+    const int32_t invB = affine_.invMatrix.b;
+    const int32_t invC = affine_.invMatrix.c;
+    const int32_t invD = affine_.invMatrix.d;
+
+    // Prepare時のoriginからの差分（ピクセル単位の整数）
+    // RendererNodeはピクセル単位でタイル分割するため、差分は常に整数
+    const int32_t deltaX = from_fixed(request.origin.x - prepareOriginX_);
+    const int32_t deltaY = from_fixed(request.origin.y - prepareOriginY_);
+
+    // 整数 × Q16.16 = Q16.16（int32_t範囲内）
+    // baseTxWithOffsets_ は Prepare時のoriginに対応した値として事前計算済み
+    const int32_t baseX = baseTxWithOffsets_ + deltaX * invA + deltaY * invB;
+    const int32_t baseY = baseTyWithOffsets_ + deltaX * invC + deltaY * invD;
+
+    int32_t left  = 0;
+    int32_t right = request.width;
+
+    if (invA) {
+        left  = std::max(left, (xs1_ - baseX) / invA);
+        right = std::min(right, (xs2_ - baseX) / invA);
+    } else if (static_cast<uint32_t>(baseX) >= static_cast<uint32_t>(fpWidth_)) {
+        left  = 1;
+        right = 0;
+    }
+
+    if (invC) {
+        left  = std::max(left, (ys1_ - baseY) / invC);
+        right = std::min(right, (ys2_ - baseY) / invC);
+    } else if (static_cast<uint32_t>(baseY) >= static_cast<uint32_t>(fpHeight_)) {
+        left  = 1;
+        right = 0;
+    }
+
+    dxStart = left;
+    dxEnd   = right - 1;  // right は排他的なので -1
+
+    // DDA用ベース座標を出力（オプショナル）
+    if (outBaseX) *outBaseX = baseX;
+    if (outBaseY) *outBaseY = baseY;
+
+    return dxStart <= dxEnd;
+}
+
+// getDataRange: スキャンライン単位の正確なデータ範囲を返す
+// アフィン変換時はcalcScanlineRangeで厳密な有効範囲を計算
+// 同一リクエストの重複呼び出しはキャッシュで高速化
+DataRange SourceNode::getDataRange(const RenderRequest &request) const
+{
+    // アフィン変換がない場合はAABBベースで十分（正確）
+    if (!hasAffine_) {
+        return prepareResponse_.getDataRange(request);
+    }
+
+    // キャッシュヒットチェック（同一スキャンラインの重複呼び出し対応）
+    DataRange cached;
+    if (dataRangeCache_.tryGet(request, cached)) {
+        return cached;
+    }
+
+    // calcScanlineRangeで正確な有効範囲を計算
+    int32_t dxStart = 0, dxEnd = 0;
+    DataRange result;
+    if (calcScanlineRange(request, dxStart, dxEnd, nullptr, nullptr)) {
+        result = DataRange{static_cast<int16_t>(dxStart), static_cast<int16_t>(dxEnd + 1)};
+    } else {
+        result = DataRange{0, 0};
+    }
+
+    // キャッシュ更新
+    dataRangeCache_.set(request, result);
+
+    return result;
+}
+
+// アフィン変換付きプル処理（スキャンライン専用）
+// 前提: request.height == 1（RendererNodeはスキャンライン単位で処理）
+// 有効範囲のみのバッファを返し、範囲外の0データを下流に送らない
+RenderResponse &SourceNode::pullProcessWithAffine(const RenderRequest &request)
+{
+    // スキャンライン有効範囲を計算
+    int32_t dxStart = 0, dxEnd = 0, baseX = 0, baseY = 0;
+    if (!calcScanlineRange(request, dxStart, dxEnd, &baseX, &baseY)) {
+        return makeEmptyResponse(request.origin);
+    }
+
+    // originを有効範囲に合わせて調整
+    // dxStart分だけ右にオフセット（バッファ左端のワールド座標）
+    Point adjustedOrigin = {request.origin.x + to_fixed(dxStart), request.origin.y};
+
+    // 空のResponseを取得し、バッファを直接作成（ムーブなし）
+    int validWidth       = dxEnd - dxStart + 1;
+    RenderResponse &resp = makeEmptyResponse(adjustedOrigin);
+    // 出力フォーマット決定:
+    // - 1chバイリニア対応フォーマット（Alpha8等）: ソースフォーマット直接出力
+    // - その他のバイリニア: RGBA8_Straight出力
+    // - 最近傍: ソースフォーマット出力（ただしbit-packedはIndex8に展開）
+    PixelFormatID outFormat;
+    if (useBilinear_) {
+        outFormat = view_ops::canUseSingleChannelBilinear(source_.formatID, edgeFadeFlags_)
+                        ? source_.formatID
+                        : PixelFormatIDs::RGBA8_Straight;
+    } else {
+        // bit-packed形式の場合、DDAはIndex8形式で出力するため出力フォーマットをIndex8に
+        if (source_.formatID && source_.formatID->pixelsPerUnit > 1) {
+            outFormat = PixelFormatIDs::Index8;
+        } else {
+            outFormat = source_.formatID;
+        }
+    }
+    ImageBuffer *output = resp.createBuffer(validWidth, 1, outFormat, InitPolicy::Uninitialized);
+
+    if (!output) {
+        return resp;  // バッファ作成失敗時は空のResponseを返す
+    }
+
+    // バッファにワールド座標originを設定（makeResponseを使わないパス）
+    output->setOrigin(adjustedOrigin);
+
+#ifdef FLEXIMG_DEBUG_PERF_METRICS
+    PerfMetrics::instance().nodes[NodeType::Source].recordAlloc(output->totalBytes(), output->width(),
+                                                                output->height());
+#endif
+
+    // DDA転写（1行のみ）
+    const int32_t invA = affine_.invMatrix.a;
+    const int32_t invC = affine_.invMatrix.c;
+    int32_t srcX_fixed = invA * dxStart + baseX;
+    int32_t srcY_fixed = invC * dxStart + baseY;
+
+    void *dstRow = output->data();
+
+    // ViewPortのx,yオフセットをQ16.16固定小数点に変換
+    int_fixed offsetX = static_cast<int32_t>(source_.x) << INT_FIXED_SHIFT;
+    int_fixed offsetY = static_cast<int32_t>(source_.y) << INT_FIXED_SHIFT;
+
+    if (useBilinear_) {
+        // バイリニア補間（出力はRGBA8_Straight）
+        // 0.5ピクセル減算（ピクセル中心→左上基準への変換）
+        constexpr int_fixed halfPixel = 1 << (INT_FIXED_SHIFT - 1);
+        // パレット情報をPixelAuxInfoとして渡す（Index8のパレット展開用）
+        PixelAuxInfo auxInfo;
+        if (palette_) {
+            auxInfo.palette           = palette_.data;
+            auxInfo.paletteFormat     = palette_.format;
+            auxInfo.paletteColorCount = palette_.colorCount;
+        }
+        if (colorKeyRGBA8_ != colorKeyReplace_) {
+            auxInfo.colorKeyRGBA8   = colorKeyRGBA8_;
+            auxInfo.colorKeyReplace = colorKeyReplace_;
+        }
+        const PixelAuxInfo *auxPtr =
+            (auxInfo.palette || auxInfo.colorKeyRGBA8 != auxInfo.colorKeyReplace) ? &auxInfo : nullptr;
+        view_ops::copyRowDDABilinear(dstRow, source_, validWidth, srcX_fixed + offsetX - halfPixel,
+                                     srcY_fixed + offsetY - halfPixel, invA, invC, edgeFadeFlags_, auxPtr);
+    } else {
+        // 最近傍補間（BPP分岐は関数内部で実施）
+        // view_ops::copyRowDDA(dstRow, source_, validWidth,
+        //     srcX_fixed, srcY_fixed, invA, invC);
+
+        // DDAParam を構築（bit-packed形式は境界チェックにsrcWidth/srcHeightを使用）
+        // ViewPortのx,yオフセットを加算
+        DDAParam param = {
+            source_.stride, source_.width, source_.height, srcX_fixed + offsetX, srcY_fixed + offsetY, invA,
+            invC,           nullptr,       nullptr};
+
+        // フォーマットの関数ポインタを呼び出し
+        if (source_.formatID && source_.formatID->copyRowDDA) {
+            source_.formatID->copyRowDDA(static_cast<uint8_t *>(dstRow), static_cast<const uint8_t *>(source_.data),
+                                         validWidth, &param);
+        }
+    }
+
+    // パレット情報を出力ImageBufferに設定
+    if (palette_) {
+        output->setPalette(palette_);
+    }
+    // カラーキー情報を出力ImageBufferに設定
+    if (colorKeyRGBA8_ != colorKeyReplace_) {
+        output->auxInfo().colorKeyRGBA8   = colorKeyRGBA8_;
+        output->auxInfo().colorKeyReplace = colorKeyReplace_;
+    }
+
+    return resp;
+}
+
+}  // namespace FLEXIMG_NAMESPACE

@@ -58,3 +58,16 @@
 
 // Operations
 #include "../../impl/fleximg/operations/filters.inl"
+
+// Nodes
+#include "../../impl/fleximg/nodes/affine_node.inl"
+#include "../../impl/fleximg/nodes/composite_node.inl"
+#include "../../impl/fleximg/nodes/distributor_node.inl"
+#include "../../impl/fleximg/nodes/filter_node_base.inl"
+#include "../../impl/fleximg/nodes/horizontal_blur_node.inl"
+#include "../../impl/fleximg/nodes/matte_node.inl"
+#include "../../impl/fleximg/nodes/ninepatch_source_node.inl"
+#include "../../impl/fleximg/nodes/renderer_node.inl"
+#include "../../impl/fleximg/nodes/sink_node.inl"
+#include "../../impl/fleximg/nodes/source_node.inl"
+#include "../../impl/fleximg/nodes/vertical_blur_node.inl"
