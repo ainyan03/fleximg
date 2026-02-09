@@ -10,11 +10,16 @@
 ### 主要ディレクトリ
 
 ```
-src/fleximg/           # コアライブラリ
-├── nodes/             # ノード実装（Source, Composite, Filter等）
+src/fleximg/           # 公開ヘッダ（宣言のみ）
+├── nodes/             # ノード宣言
 ├── image/             # ImageBuffer, PixelFormat, ViewPort
-├── operations/        # blend, filters, transform
+├── operations/        # filters, transform
 └── core/memory/       # アロケータ、プール管理
+impl/fleximg/          # 実装ファイル（.inl、非公開）
+├── nodes/             # ノード実装
+├── image/             # PixelFormat, ViewPort 実装
+├── operations/        # filters 実装
+└── core/memory/       # メモリ管理実装
 examples/              # サンプルコード
 ├── bench/             # ベンチマーク（native/M5Stack両対応）
 ├── m5stack_basic/     # M5Stack基本サンプル

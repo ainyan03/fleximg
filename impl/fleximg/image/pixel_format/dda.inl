@@ -1,36 +1,8 @@
-#ifndef FLEXIMG_PIXEL_FORMAT_DDA_H
-#define FLEXIMG_PIXEL_FORMAT_DDA_H
-
-// pixel_format.h からインクルードされることを前提
-// （PixelFormatDescriptor、DDAParam、int_fixed等は既に定義済み）
-
-// ========================================================================
-// DDA (Digital Differential Analyzer) 転写関数 - バイト単位実装
-// ========================================================================
-//
-// ピクセルフォーマットに依存しないDDA処理の実装を集約。
-// アフィン変換やバイリニア補間で使用される、高速なピクセル転写関数群。
-//
-// **このファイルの内容:**
-// - バイト単位のDDA（1/2/3/4 バイト/ピクセル）
-//   - copyRowDDA_Byte<BytesPerPixel>: 行単位ピクセル転写
-//   - copyQuadDDA_Byte<BytesPerPixel>: 2x2グリッド抽出（バイリニア補間用）
-//   - ラッパー関数: copyRowDDA_1Byte ～ _4Byte, copyQuadDDA_1Byte ～ _4Byte
-//
-// **bit-packed DDA関数の場所:**
-// - ビット単位のDDA（1/2/4 ビット/ピクセル）は bit_packed_index.h 内に定義
-//   - copyRowDDA_Bit<BitsPerPixel, Order>
-//   - copyQuadDDA_Bit<BitsPerPixel, Order>
-// - これは bit_packed_detail::readPixelDirect への依存を避けるための設計
-//   （インクルード順序の複雑さを回避しつつ、命名規則の統一は達成）
-//
-// **命名規則の統一:**
-// - バイト単位: _Byte サフィックス（明示的にバイト数を指定）
-// - ビット単位: _Bit サフィックス（明示的にビット数とbit-orderを指定）
-// - 対称性: copyRowDDA_Byte<3> vs copyRowDDA_Bit<4, MSBFirst>
-//
-
-#ifdef FLEXIMG_IMPLEMENTATION
+/**
+ * @file dda.inl
+ * @brief DDA (Digital Differential Analyzer) 転写関数 実装
+ * @see src/fleximg/image/pixel_format/dda.h
+ */
 
 namespace FLEXIMG_NAMESPACE {
 namespace pixel_format {
@@ -40,7 +12,7 @@ namespace detail {
 // バイト単位のDDA関数（1/2/3/4 バイト/ピクセル）
 // ========================================================================
 
-// BytesPerPixel → ネイティブ型マッピング（ロード・ストア分離用）
+// BytesPerPixel -> ネイティブ型マッピング（ロード・ストア分離用）
 // 1, 2, 4 バイトはネイティブ型で直接ロード・ストア可能
 // 3 バイトはネイティブ型が存在しないため byte 単位で処理
 template <size_t BytesPerPixel>
@@ -73,7 +45,7 @@ void copyRowDDA_ConstY(uint8_t *__restrict__ dstRow, const uint8_t *__restrict__
     // 端数を先に処理し、4ピクセルループを最後に連続実行する
     if constexpr (BytesPerPixel == 3) {
         if (count & 1) {
-            // BytesPerPixel==3: byte単位でロード・ストア分離（3bytes × 4pixels）
+            // BytesPerPixel==3: byte単位でロード・ストア分離（3bytes x 4pixels）
             size_t s0   = static_cast<size_t>(srcX >> INT_FIXED_SHIFT) * 3;
             uint8_t p00 = srcRowBase[s0], p01 = srcRowBase[s0 + 1], p02 = srcRowBase[s0 + 2];
             srcX += incrX;
@@ -84,7 +56,7 @@ void copyRowDDA_ConstY(uint8_t *__restrict__ dstRow, const uint8_t *__restrict__
         }
         count >>= 1;
         while (count--) {
-            // BytesPerPixel==3: byte単位でロード・ストア分離（3bytes × 4pixels）
+            // BytesPerPixel==3: byte単位でロード・ストア分離（3bytes x 4pixels）
             size_t s0   = static_cast<size_t>(srcX >> INT_FIXED_SHIFT) * 3;
             uint8_t p00 = srcRowBase[s0], p01 = srcRowBase[s0 + 1], p02 = srcRowBase[s0 + 2];
             srcX += incrX;
@@ -317,7 +289,7 @@ inline void copyRowDDA_4Byte(uint8_t *dst, const uint8_t *srcData, int_fast16_t 
 // ============================================================================
 //
 // バイリニア補間に必要な4ピクセル（2x2グリッド）を抽出する。
-// 出力形式: [p00,p10,p01,p11][p00,p10,p01,p11]... × count
+// 出力形式: [p00,p10,p01,p11][p00,p10,p01,p11]... x count
 // 重み情報はparam->weightsに出力される。
 //
 // 最適化:
@@ -359,7 +331,7 @@ inline void copyQuadPixels(uint8_t *__restrict__ dst, const uint8_t *p00, const 
 
 // 4ピクセル抽出（DDAベース、バイリニア補間用）
 // 境界領域と安全領域の2ブロック構成:
-//   boundary [0, safeStart) → safe [safeStart, safeEnd) → boundary [safeEnd,
+//   boundary [0, safeStart) -> safe [safeStart, safeEnd) -> boundary [safeEnd,
 //   count)
 // fadeFlags は prepareCopyQuadDDA で事前生成済み、この関数では参照・更新しない
 template <size_t BytesPerPixel>
@@ -703,7 +675,3 @@ inline void copyQuadDDA_Bit(uint8_t *dst, const uint8_t *srcData, int_fast16_t c
 }  // namespace detail
 }  // namespace pixel_format
 }  // namespace FLEXIMG_NAMESPACE
-
-#endif  // FLEXIMG_IMPLEMENTATION
-
-#endif  // FLEXIMG_PIXEL_FORMAT_DDA_H

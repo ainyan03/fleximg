@@ -1,13 +1,8 @@
-#ifndef FLEXIMG_PIXEL_FORMAT_FORMAT_CONVERTER_H
-#define FLEXIMG_PIXEL_FORMAT_FORMAT_CONVERTER_H
-
-// pixel_format.h の末尾からインクルードされることを前提
-// （FormatConverter, PixelFormatDescriptor, PixelFormatIDs 等は既に定義済み）
-
-// =============================================================================
-// 実装部
-// =============================================================================
-#ifdef FLEXIMG_IMPLEMENTATION
+/**
+ * @file format_converter.inl
+ * @brief FormatConverter 実装
+ * @see src/fleximg/image/pixel_format/format_converter.h
+ */
 
 namespace FLEXIMG_NAMESPACE {
 
@@ -192,7 +187,7 @@ FormatConverter resolveConverter(PixelFormatID srcFormat, PixelFormatID dstForma
         result.ctx.pixelOffsetInByte = srcAux->pixelOffsetInByte;
     }
 
-    // 同一フォーマット → memcpy
+    // 同一フォーマット -> memcpy
     if (srcFormat == dstFormat) {
         result.ctx.pixelsPerUnit = srcFormat->pixelsPerUnit;
         result.ctx.bytesPerUnit  = srcFormat->bytesPerUnit;
@@ -200,7 +195,7 @@ FormatConverter resolveConverter(PixelFormatID srcFormat, PixelFormatID dstForma
         return result;
     }
 
-    // エンディアン兄弟 → swapEndian
+    // エンディアン兄弟 -> swapEndian
     if (srcFormat->siblingEndian == dstFormat && srcFormat->swapEndian) {
         result.ctx.toStraight = srcFormat->swapEndian;
         result.func           = fcv_single;
@@ -216,7 +211,7 @@ FormatConverter resolveConverter(PixelFormatID srcFormat, PixelFormatID dstForma
         result.ctx.expandIndex       = srcFormat->expandIndex;
 
         if (palFmt == dstFormat) {
-            // 直接展開: Index → パレットフォーマット == 出力フォーマット
+            // 直接展開: Index -> パレットフォーマット == 出力フォーマット
             result.func = fcv_expandIndex_direct;
             return result;
         }
@@ -228,7 +223,7 @@ FormatConverter resolveConverter(PixelFormatID srcFormat, PixelFormatID dstForma
         }
 
         if (palFmt == PixelFormatIDs::RGBA8_Straight) {
-            // expandIndex → fromStraight
+            // expandIndex -> fromStraight
             if (dstFormat->fromStraight) {
                 result.ctx.fromStraight = dstFormat->fromStraight;
                 result.func             = fcv_expandIndex_fromStraight;
@@ -236,7 +231,7 @@ FormatConverter resolveConverter(PixelFormatID srcFormat, PixelFormatID dstForma
             return result;
         }
 
-        // expandIndex → toStraight → fromStraight
+        // expandIndex -> toStraight -> fromStraight
         if (palFmt && palFmt->toStraight && dstFormat->fromStraight) {
             result.ctx.toStraight           = palFmt->toStraight;
             result.ctx.fromStraight         = dstFormat->fromStraight;
@@ -246,7 +241,7 @@ FormatConverter resolveConverter(PixelFormatID srcFormat, PixelFormatID dstForma
         return result;
     }
 
-    // src == RGBA8 → fromStraight 直接（中間バッファ不要）
+    // src == RGBA8 -> fromStraight 直接（中間バッファ不要）
     if (srcFormat == PixelFormatIDs::RGBA8_Straight) {
         if (dstFormat->fromStraight) {
             result.ctx.toStraight = dstFormat->fromStraight;
@@ -255,7 +250,7 @@ FormatConverter resolveConverter(PixelFormatID srcFormat, PixelFormatID dstForma
         return result;
     }
 
-    // dst == RGBA8 → toStraight 直接（中間バッファ不要）
+    // dst == RGBA8 -> toStraight 直接（中間バッファ不要）
     if (dstFormat == PixelFormatIDs::RGBA8_Straight) {
         if (srcFormat->toStraight) {
             result.ctx.toStraight = srcFormat->toStraight;
@@ -283,7 +278,3 @@ FormatConverter resolveConverter(PixelFormatID srcFormat, PixelFormatID dstForma
 }
 
 }  // namespace FLEXIMG_NAMESPACE
-
-#endif  // FLEXIMG_IMPLEMENTATION
-
-#endif  // FLEXIMG_PIXEL_FORMAT_FORMAT_CONVERTER_H

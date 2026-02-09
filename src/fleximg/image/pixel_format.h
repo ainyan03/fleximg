@@ -249,7 +249,7 @@ namespace pixel_format {
 namespace detail {
 
 // BytesPerPixel別 DDA転写関数（前方宣言）
-// 実装は dda.h で提供（FLEXIMG_IMPLEMENTATION部）
+// 実装は impl/fleximg/image/pixel_format/dda.inl で提供
 void copyRowDDA_1Byte(uint8_t *dst, const uint8_t *srcData, int_fast16_t count, const DDAParam *param);
 void copyRowDDA_2Byte(uint8_t *dst, const uint8_t *srcData, int_fast16_t count, const DDAParam *param);
 void copyRowDDA_3Byte(uint8_t *dst, const uint8_t *srcData, int_fast16_t count, const DDAParam *param);
@@ -262,7 +262,7 @@ void copyQuadDDA_3Byte(uint8_t *dst, const uint8_t *srcData, int_fast16_t count,
 void copyQuadDDA_4Byte(uint8_t *dst, const uint8_t *srcData, int_fast16_t count, const DDAParam *param);
 
 // BitsPerPixel別 bit-packed DDA転写関数（前方宣言）
-// 実装は dda.h で提供（bit_packed_index.h インクルード後）
+// 実装は impl/fleximg/image/pixel_format/dda.inl で提供
 template <int BitsPerPixel, BitOrder Order>
 void copyRowDDA_Bit(uint8_t *dst, const uint8_t *srcData, int_fast16_t count, const DDAParam *param);
 
@@ -290,56 +290,6 @@ inline void lut8to16(uint16_t *d, const uint8_t *s, size_t pixelCount, const uin
 
 }  // namespace FLEXIMG_NAMESPACE
 
-// ------------------------------------------------------------------------
-// 内部ヘルパー関数（実装部）
-// ------------------------------------------------------------------------
-#ifdef FLEXIMG_IMPLEMENTATION
-
-namespace FLEXIMG_NAMESPACE {
-namespace pixel_format {
-namespace detail {
-
-template <typename T>
-void lut8toN(T *d, const uint8_t *s, size_t pixelCount, const T *lut)
-{
-    while (pixelCount & 3) {
-        auto v0 = s[0];
-        ++s;
-        auto l0 = lut[v0];
-        --pixelCount;
-        d[0] = l0;
-        ++d;
-    }
-    pixelCount >>= 2;
-    if (pixelCount == 0) return;
-    do {
-        auto v0 = s[0];
-        auto v1 = s[1];
-        auto v2 = s[2];
-        auto v3 = s[3];
-        s += 4;
-        auto l0 = lut[v0];
-        auto l1 = lut[v1];
-        auto l2 = lut[v2];
-        auto l3 = lut[v3];
-        d[0]    = l0;
-        d[1]    = l1;
-        d[2]    = l2;
-        d[3]    = l3;
-        d += 4;
-    } while (--pixelCount);
-}
-
-// 明示的インスタンス化（非inlineを維持）
-template void lut8toN<uint16_t>(uint16_t *, const uint8_t *, size_t, const uint16_t *);
-template void lut8toN<uint32_t>(uint32_t *, const uint8_t *, size_t, const uint32_t *);
-
-}  // namespace detail
-}  // namespace pixel_format
-}  // namespace FLEXIMG_NAMESPACE
-
-#endif  // FLEXIMG_IMPLEMENTATION
-
 // ========================================================================
 // 各ピクセルフォーマット（個別ヘッダ）
 // ========================================================================
@@ -351,11 +301,6 @@ template void lut8toN<uint32_t>(uint32_t *, const uint8_t *, size_t, const uint3
 #include "pixel_format/rgb565.h"
 #include "pixel_format/rgb888.h"
 #include "pixel_format/rgba8_straight.h"
-
-// DDA関数（bit_packed_detail が定義された後にインクルード）
-#ifdef FLEXIMG_IMPLEMENTATION
-#include "pixel_format/dda.h"
-#endif
 
 namespace FLEXIMG_NAMESPACE {
 
@@ -486,8 +431,5 @@ inline void convertFormat(const void *src, PixelFormatID srcFormat, void *dst, P
 }
 
 }  // namespace FLEXIMG_NAMESPACE
-
-// FormatConverter 実装（FLEXIMG_IMPLEMENTATION ガード内）
-#include "pixel_format/format_converter.h"
 
 #endif  // FLEXIMG_PIXEL_FORMAT_H

@@ -12,6 +12,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- **宣言/実装の物理分離**
+  - `src/fleximg/` を宣言のみ（公開ヘッダ）、`impl/fleximg/` に実装（`.inl`）を配置
+  - `#ifdef FLEXIMG_IMPLEMENTATION` パターンを廃止し、`fleximg.cpp` が両方をインクルードする構成に変更
+  - Arduino ライブラリとして安全にインクルード可能に（実装の重複コンパイルを防止）
+  - `dda.h`, `format_converter.h` を削除（実装は `.inl` に移行）
+  - examples の `#define FLEXIMG_IMPLEMENTATION` を削除、`platformio.ini` で `fleximg.cpp` をビルド対象に追加
+
+- **common.h: デバッグディレイのプラットフォーム対応改善**
+  - `__has_include` による FreeRTOS 自動検出（ESP-IDF 直接利用にも対応）
+  - FreeRTOS なし Arduino 環境では `delay()` にフォールバック
+
 - **WebUI: C++同期型定義を `cpp-sync-types.js` に分離**
   - `NODE_TYPES`, `PIXEL_FORMATS`, `DEFAULT_PIXEL_FORMAT` 等のC++側と手動同期が必要な定義を `app.js` から `demo/web/cpp-sync-types.js` に分離
   - `buildFormatOptions()`, `NodeTypeHelper` も同ファイルに移動

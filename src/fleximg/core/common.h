@@ -20,9 +20,10 @@
 // デバッグログマクロ
 // ========================================================================
 //
-// FLEXIMG_DEBUG_LOG(fmt, ...): デバッグメッセージ出力 + flush
-//   - ARDUINO環境: printf + fflush + vTaskDelay(1)
-//   - その他: printf + fflush
+// FLEXIMG_DEBUG_LOG(fmt, ...): デバッグメッセージ出力 + flush + delay
+//   - FreeRTOS環境（ESP-IDF等）: printf + fflush + vTaskDelay(1)
+//   - Arduino環境（FreeRTOSなし）: printf + fflush + delay(1)
+//   - その他（PC/WASM）: printf + fflush
 //
 // FLEXIMG_DEBUG_WARN(fmt, ...): 警告出力（デバッグビルドのみ有効）
 //
@@ -30,20 +31,27 @@
 // FLEXIMG_DEBUG_LOG は ASSERT/REQUIRE から使用するため常に定義。
 //
 
-#ifdef ARDUINO
-#define FLEXIMG_DEBUG_LOG(fmt, ...)    \
-    do {                               \
-        printf(fmt "\n", __VA_ARGS__); \
-        fflush(stdout);                \
-        vTaskDelay(1);                 \
-    } while (0)
+// プラットフォーム別のデバッグ用ディレイ
+#if __has_include(<freertos/FreeRTOS.h>)
+// FreeRTOS 環境（ESP-IDF / ESP32 + Arduino 等）
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#define FLEXIMG_DEBUG_DELAY_() vTaskDelay(1)
+#elif defined(ARDUINO)
+// FreeRTOS なし Arduino（AVR 等）
+#include <Arduino.h>
+#define FLEXIMG_DEBUG_DELAY_() delay(1)
 #else
+// PC / WASM
+#define FLEXIMG_DEBUG_DELAY_() ((void)0)
+#endif
+
 #define FLEXIMG_DEBUG_LOG(fmt, ...)    \
     do {                               \
         printf(fmt "\n", __VA_ARGS__); \
         fflush(stdout);                \
+        FLEXIMG_DEBUG_DELAY_();        \
     } while (0)
-#endif
 
 #ifdef FLEXIMG_DEBUG
 #define FLEXIMG_DEBUG_WARN(fmt, ...) FLEXIMG_DEBUG_LOG(fmt, __VA_ARGS__)
