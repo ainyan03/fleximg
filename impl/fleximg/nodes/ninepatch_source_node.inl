@@ -313,7 +313,7 @@ void NinePatchSourceNode::updatePatchGeometry()
                 ViewPort subView =
                     view_ops::subView(source_, srcX[col] + dx, srcY[row] + dy, effW[col] + dw, effH[row] + dh);
                 patches_[idx].setSource(subView);
-                patches_[idx].setPivot(0, 0);
+                patches_[idx].setPivot(int_fixed(0), int_fixed(0));
 
                 // エッジフェードアウト設定（外周の辺のみフェードアウト有効）
                 // 隣接パッチとの境界（内部の辺）はフェードアウト無効
