@@ -5,21 +5,19 @@
 
 #include <M5Unified.h>
 
-// fleximg (stb-style: define FLEXIMG_IMPLEMENTATION before including headers)
+// fleximg
 #define FLEXIMG_NAMESPACE fleximg
-#define FLEXIMG_IMPLEMENTATION
 #include "fleximg/core/common.h"
 #include "fleximg/core/memory/platform.h"
+#include "fleximg/core/memory/pool_allocator.h"
 #include "fleximg/core/types.h"
 #include "fleximg/image/image_buffer.h"
+#include "fleximg/image/pixel_format.h"
 #include "fleximg/image/viewport.h"
 #include "fleximg/nodes/affine_node.h"
 #include "fleximg/nodes/composite_node.h"
 #include "fleximg/nodes/renderer_node.h"
 #include "fleximg/nodes/source_node.h"
-
-#include "fleximg/core/memory/pool_allocator.h"
-#include "fleximg/image/pixel_format.h"
 
 #include "lcd_sink_node.h"
 

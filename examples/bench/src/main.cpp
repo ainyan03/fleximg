@@ -46,10 +46,9 @@
 #include <string>
 #endif
 
-// fleximg (stb-style: define FLEXIMG_IMPLEMENTATION before including headers)
+// fleximg
 #define FLEXIMG_NAMESPACE fleximg
 #define FLEXIMG_DEBUG_MOVE_COUNT // ムーブ回数カウンタ有効化
-#define FLEXIMG_IMPLEMENTATION
 #include "fleximg/core/common.h"
 #include "fleximg/core/memory/allocator.h"
 #include "fleximg/core/memory/pool_allocator.h"
